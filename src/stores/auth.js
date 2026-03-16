@@ -31,6 +31,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const signup = ({ id, password, nickname, mainPosition }) => {
     const safeId = id.trim()
+    const safePosition = mainPosition.trim()
+    if (!safePosition) {
+      throw new Error('주 포지션을 입력해주세요.')
+    }
+
     const exists = users.value.some((user) => user.id === safeId)
     if (exists) {
       throw new Error('이미 사용 중인 아이디입니다.')
@@ -40,7 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
       id: safeId,
       password,
       nickname: nickname.trim(),
-      mainPosition: mainPosition.trim(),
+      mainPosition: safePosition,
       createdAt: new Date().toISOString()
     })
     currentUserId.value = safeId

@@ -41,6 +41,7 @@
           <button type="button" class="add-position" @click="addPosition">+ 포지션 추가</button>
         </div>
         <input v-model="newTeam.contact" placeholder="연락 링크(contact.url)" />
+        <input v-model="newTeam.recruitDeadline" type="datetime-local" placeholder="모집 마감일(선택)" />
         <select v-model="newTeam.hackathonSlug">
           <option value="">해커톤 미연결</option>
           <option v-for="h in store.hackathons" :key="h.slug" :value="h.slug">{{ h.title }}</option>
@@ -53,7 +54,7 @@
         <h2>{{ selectedTeam.name }}</h2>
         <p>{{ selectedTeam.intro }}</p>
         <p class="meta"><strong>코드</strong><span>{{ selectedTeam.code }}</span></p>
-        <p class="meta"><strong>모집 상태</strong><span>{{ selectedTeam.isOpen ? '모집중' : '마감' }}</span></p>
+        <p class="meta"><strong>모집 상태</strong><span>{{ getRecruitStatusText(selectedTeam) }}</span></p>
         <div class="meta">
           <strong>모집 포지션</strong>
           <div class="position-chips" v-if="selectedTeam.positions?.length">
@@ -71,7 +72,7 @@
         <article v-for="team in filteredTeams" :key="team.code" class="team-card">
           <div class="team-card-head">
             <h3>{{ team.name }}</h3>
-            <span class="status-chip" :class="team.isOpen ? 'open' : 'closed'">{{ team.isOpen ? '모집중' : '마감' }}</span>
+            <span class="status-chip" :class="store.isRecruitmentClosed(team) ? 'closed' : 'open'">{{ getRecruitStatusText(team) }}</span>
           </div>
           <p class="intro">{{ team.intro }}</p>
           <p class="meta"><strong>코드</strong><span>{{ team.code }}</span></p>
@@ -99,12 +100,13 @@ import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
 import { useAuthStore } from '../stores/auth'
 import StatusState from '../components/StatusState.vue'
+import { POSITION_OPTIONS } from '../constants/positions'
 
 const store = useHackathonStore()
 const route = useRoute()
 const authStore = useAuthStore()
 const showForm = ref(false)
-const positionOptions = ['Frontend', 'Backend', 'Fullstack', 'AI/ML', 'Designer', 'PM']
+const positionOptions = POSITION_OPTIONS
 
 const defaultPosition = () => ({ role: '', customRole: '', count: 1 })
 
@@ -114,6 +116,7 @@ const newTeam = ref({
   positions: [defaultPosition()],
   contact: '',
   hackathonSlug: '',
+  recruitDeadline: '',
   isOpen: true
 })
 
@@ -145,6 +148,15 @@ const removePosition = (index) => {
   newTeam.value.positions.splice(index, 1)
 }
 
+
+const getRecruitStatusText = (team) => {
+  if (store.isRecruitmentClosed(team)) {
+    return team.recruitDeadline ? '마감(기간 종료)' : '마감'
+  }
+  if (!team.recruitDeadline) return '모집중'
+  return `모집중 · ${new Date(team.recruitDeadline).toLocaleString('ko-KR', { hour12: false })} 마감`
+}
+
 const createTeam = () => {
   if (!authStore.isLoggedIn) {
     alert('팀 생성은 로그인 후 가능합니다.')
@@ -161,11 +173,13 @@ const createTeam = () => {
   store.addTeam({
     code: `team-${Date.now().toString().slice(-6)}`,
     ...newTeam.value,
+    ownerId: authStore.currentUser?.id || '',
     ownerNickname: authStore.currentUser?.nickname || '',
+    members: [authStore.currentUser?.id].filter(Boolean),
     positions,
     lookingFor: positions.map((position) => `${position.role} ${position.count}명`).join(', ')
   })
-  newTeam.value = { name: '', intro: '', positions: [defaultPosition()], contact: '', hackathonSlug: '', isOpen: true }
+  newTeam.value = { name: '', intro: '', positions: [defaultPosition()], contact: '', hackathonSlug: '', recruitDeadline: '', isOpen: true }
   showForm.value = false
 }
 </script>

@@ -88,8 +88,21 @@ const normalizeTeams = (items) =>
     positions: normalizeRecruitPositions(team),
     lookingFor: team.lookingFor || team.position || team.role || '',
     isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open || normalizeRecruitPositions(team).length),
+    recruitDeadline: team.recruitDeadline || team.recruitUntil || '',
+    ownerId: team.ownerId || team.owner || '',
+    ownerNickname: team.ownerNickname || '',
+    members: Array.isArray(team.members) ? team.members : [],
     hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
   }))
+
+
+const isRecruitmentClosed = (team) => {
+  if (!team?.isOpen) return true
+  if (!team?.recruitDeadline) return false
+  const deadline = new Date(team.recruitDeadline)
+  if (Number.isNaN(deadline.getTime())) return false
+  return deadline.getTime() < Date.now()
+}
 
 const normalizeLeaderboards = (items) =>
   items.map((entry) => ({
@@ -269,6 +282,11 @@ export const useHackathonStore = defineStore('hackathon', () => {
   const getTeamsByHackathon = (slug) =>
     normalizeTeams(ensureArray(teams.value)).filter((t) => t.hackathonSlug === slug)
 
+  const getMyTeamsByHackathon = ({ hackathonSlug, userId }) =>
+    normalizeTeams(ensureArray(teams.value)).filter(
+      (team) => team.hackathonSlug === hackathonSlug && team.ownerId && team.ownerId === userId
+    )
+
   const getLeaderboardByHackathon = (slug) => {
     const safeLeaderboards = normalizeLeaderboards(ensureArray(leaderboards.value))
     if (!Array.isArray(leaderboards.value)) {
@@ -423,6 +441,8 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getLeaderboardByHackathon,
     getRankingsByPeriod,
     getGlobalRankings,
+    getMyTeamsByHackathon,
+    isRecruitmentClosed,
     addTeam,
     submitProject
   }

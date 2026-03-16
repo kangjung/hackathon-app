@@ -19,7 +19,17 @@
         <input v-model="signupForm.id" placeholder="아이디" required />
         <input v-model="signupForm.password" type="password" placeholder="비밀번호" required />
         <input v-model="signupForm.nickname" placeholder="닉네임" required />
-        <input v-model="signupForm.mainPosition" placeholder="주 포지션 (예: Frontend)" required />
+        <select v-model="signupForm.mainPosition" required>
+          <option disabled value="">주 포지션 선택</option>
+          <option v-for="position in positionOptions" :key="position" :value="position">{{ position }}</option>
+          <option value="기타">기타(직접 입력)</option>
+        </select>
+        <input
+          v-if="signupForm.mainPosition === '기타'"
+          v-model="signupForm.customMainPosition"
+          placeholder="주 포지션 직접 입력"
+          required
+        />
         <button type="submit">가입하고 시작하기</button>
       </form>
 
@@ -32,6 +42,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { POSITION_OPTIONS } from '../constants/positions'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -40,7 +51,8 @@ const mode = ref('login')
 const message = ref('')
 
 const loginForm = ref({ id: '', password: '' })
-const signupForm = ref({ id: '', password: '', nickname: '', mainPosition: '' })
+const positionOptions = POSITION_OPTIONS
+const signupForm = ref({ id: '', password: '', nickname: '', mainPosition: '', customMainPosition: '' })
 
 const onLogin = () => {
   message.value = ''
@@ -57,7 +69,11 @@ const onSignup = () => {
   message.value = ''
 
   try {
-    authStore.signup(signupForm.value)
+    const mainPosition = signupForm.value.mainPosition === '기타'
+      ? signupForm.value.customMainPosition.trim()
+      : signupForm.value.mainPosition
+
+    authStore.signup({ ...signupForm.value, mainPosition })
     router.push('/me')
   } catch (err) {
     message.value = err instanceof Error ? err.message : '가입에 실패했습니다.'
@@ -72,7 +88,7 @@ const onSignup = () => {
 .tab-row button { border: 1px solid #dbe4f6; background: #f8faff; color: #334155; }
 .tab-row button.active { background: #4f46e5; color: #fff; }
 .form { display: grid; gap: 0.6rem; }
-input { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.65rem; }
+input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.65rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.8rem; cursor: pointer; }
 .message { margin-top: 0.75rem; color: #b91c1c; font-weight: 600; }
 </style>
