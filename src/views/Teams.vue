@@ -42,13 +42,16 @@
       </article>
 
       <div class="list" v-if="filteredTeams.length">
-        <article v-for="team in filteredTeams" :key="team.code">
-          <h3>{{ team.name }}</h3>
-          <p>{{ team.intro }}</p>
-          <p>코드: {{ team.code }} · 상태: {{ team.isOpen ? '모집중' : '마감' }}</p>
-          <p>모집 포지션: {{ team.lookingFor || '-' }}</p>
-          <p v-if="team.hackathonSlug">해커톤: {{ team.hackathonSlug }}</p>
-          <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer">연락하기</a>
+        <article v-for="team in filteredTeams" :key="team.code" class="team-card">
+          <div class="team-card-head">
+            <h3>{{ team.name }}</h3>
+            <span class="status-chip" :class="team.isOpen ? 'open' : 'closed'">{{ team.isOpen ? '모집중' : '마감' }}</span>
+          </div>
+          <p class="intro">{{ team.intro }}</p>
+          <p class="meta">코드: {{ team.code }}</p>
+          <p class="meta">모집 포지션: {{ team.lookingFor || '-' }}</p>
+          <p class="meta" v-if="team.hackathonSlug">해커톤: {{ team.hackathonSlug }}</p>
+          <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">연락하기 ↗</a>
         </article>
       </div>
       <StatusState v-else type="empty" message="조건에 맞는 팀이 없습니다." />
@@ -103,12 +106,19 @@ const createTeam = () => {
 
 <style scoped>
 .teams { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-.head { display: flex; justify-content: space-between; align-items: center; }
-button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.55rem 0.9rem; cursor: pointer; }
+.head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25); }
 .form { margin: 1rem 0; background: #fff; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
 input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem; background: #fff; color: #0f172a; }
-.detail-card { background: #eef2ff; border: 1px solid #d9e2ff; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+.detail-card { background: #eef2ff; border: 1px solid #d9e2ff; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(59, 130, 246, 0.13); }
 .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
-.list article { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; }
-a { color: #4338ca; }
+.team-card { background: linear-gradient(180deg, #fff, #f9fbff); border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
+.team-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; }
+.team-card h3 { margin: 0; }
+.status-chip { border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
+.status-chip.open { background: #e7f9ef; color: #0f8c4b; }
+.status-chip.closed { background: #f3f4f6; color: #475569; }
+.intro { color: #334155; margin: 0.6rem 0; min-height: 2.8em; }
+.meta { color: #475569; font-size: 0.9rem; margin: 0.25rem 0; }
+.contact-link { display: inline-block; margin-top: 0.65rem; color: #4338ca; font-weight: 700; text-decoration: none; }
 </style>
