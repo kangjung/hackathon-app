@@ -3,6 +3,96 @@ import { computed, ref } from 'vue'
 
 const STORAGE_KEY = 'vibe-hackathon-data-v1'
 
+const statusLabelMap = {
+  ongoing: '진행중',
+  upcoming: '예정',
+  closed: '종료'
+}
+
+const toArray = (value) => {
+  if (Array.isArray(value)) return value
+  if (!value || typeof value !== 'object') return []
+  const keys = ['items', 'data', 'hackathons', 'teams', 'leaderboards', 'list']
+  for (const key of keys) {
+    if (Array.isArray(value[key])) return value[key]
+  }
+  return Object.values(value).filter((v) => typeof v === 'object' && v)
+}
+
+const normalizeHackathon = (item, index) => {
+  const slug = item.slug || item.code || item.id || `hackathon-${index + 1}`
+  const status = item.status || item.state || item.progress || 'upcoming'
+  const tags = Array.isArray(item.tags)
+    ? item.tags
+    : typeof item.tags === 'string'
+      ? item.tags.split(',').map((t) => t.trim()).filter(Boolean)
+      : []
+
+  return {
+    slug,
+    title: item.title || item.name || item.hackathonName || slug,
+    summary: item.summary || item.description || item.overview || '',
+    status,
+    statusLabel: item.statusLabel || statusLabelMap[status] || status,
+    tags,
+    startDate: item.startDate || item.start_at || item.start || '-',
+    endDate: item.endDate || item.end_at || item.end || '-',
+    participants: Number(item.participants || item.participantCount || item.teamCount || 0)
+  }
+}
+
+const normalizeTeams = (items) =>
+  items.map((team, index) => ({
+    code: team.code || team.teamCode || team.id || `team-${index + 1}`,
+    name: team.name || team.teamName || `팀 ${index + 1}`,
+    intro: team.intro || team.description || '',
+    contact: team.contact || team.contactUrl || team.contact_url || '',
+    isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open),
+    hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
+  }))
+
+const normalizeLeaderboards = (items) =>
+  items.map((entry) => ({
+    hackathonSlug: entry.hackathonSlug || entry.slug || entry.hackathon || '',
+    teamCode: entry.teamCode || entry.code || entry.teamId || '',
+    teamName: entry.teamName || entry.name || entry.team || '',
+    points: Number(entry.points || entry.score || 0)
+  }))
+
+const normalizeDetail = (detailRaw) => {
+  if (!detailRaw || typeof detailRaw !== 'object') return {}
+
+  const values = Object.values(detailRaw)
+  const isMap = values.some((v) => v && typeof v === 'object' && !Array.isArray(v))
+  if (isMap) return detailRaw
+
+  const slug = detailRaw.slug || detailRaw.code || detailRaw.id
+  if (!slug) return {}
+
+  return {
+    [slug]: {
+      overview: detailRaw.overview || detailRaw.description || '',
+      guide: detailRaw.guide || detailRaw.notice || '',
+      evaluation: detailRaw.evaluation || detailRaw.eval || '',
+      schedule: detailRaw.schedule || detailRaw.timeline || '',
+      prize: detailRaw.prize || detailRaw.reward || ''
+    }
+  }
+}
+
+const fetchJsonWithFallback = async (paths) => {
+  for (const path of paths) {
+    try {
+      const res = await fetch(path)
+      if (!res.ok) continue
+      return await res.json()
+    } catch {
+      // try next path
+    }
+  }
+  throw new Error(`데이터 파일을 찾지 못했습니다: ${paths.join(', ')}`)
+}
+
 export const useHackathonStore = defineStore('hackathon', () => {
   const hackathons = ref([])
   const hackathonDetail = ref({})
@@ -42,21 +132,17 @@ export const useHackathonStore = defineStore('hackathon', () => {
     error.value = ''
 
     try {
-      const [hackRes, detailRes, lbRes, teamRes] = await Promise.all([
-        fetch('/data/public_hackathons.json'),
-        fetch('/data/public_hackathon_detail.json'),
-        fetch('/data/public_leaderboard.json'),
-        fetch('/data/public_teams.json')
+      const [hackRaw, detailRaw, leaderboardRaw, teamRaw] = await Promise.all([
+        fetchJsonWithFallback(['/data/public_hackathons.json', '/data/public_hackathons-4.json']),
+        fetchJsonWithFallback(['/data/public_hackathon_detail.json', '/data/public_hackathon_detail-3.json']),
+        fetchJsonWithFallback(['/data/public_leaderboard.json', '/data/public_leaderboard-5.json']),
+        fetchJsonWithFallback(['/data/public_teams.json', '/data/public_teams-6.json'])
       ])
 
-      if (!hackRes.ok || !detailRes.ok || !lbRes.ok || !teamRes.ok) {
-        throw new Error('데이터 파일을 불러오지 못했습니다.')
-      }
-
-      hackathons.value = await hackRes.json()
-      hackathonDetail.value = await detailRes.json()
-      leaderboards.value = await lbRes.json()
-      teams.value = await teamRes.json()
+      hackathons.value = toArray(hackRaw).map(normalizeHackathon)
+      hackathonDetail.value = normalizeDetail(detailRaw)
+      leaderboards.value = normalizeLeaderboards(toArray(leaderboardRaw))
+      teams.value = normalizeTeams(toArray(teamRaw))
 
       hydrateStorage()
       hasLoaded.value = true
