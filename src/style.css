@@ -16,7 +16,7 @@ button, input, select, textarea, a { font: inherit; }
 }
 
 #app { min-height: 100vh; }
-.main-content { min-height: calc(100vh - 150px); }
+.main-content { min-height: calc(100vh - 126px); }
 .footer {
   border-top: 1px solid #dce4f4;
   color: #64748b;
