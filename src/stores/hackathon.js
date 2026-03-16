@@ -19,6 +19,9 @@ const toArray = (value) => {
   return Object.values(value).filter((v) => typeof v === 'object' && v)
 }
 
+
+const ensureArray = (value) => (Array.isArray(value) ? value : toArray(value))
+
 const normalizeHackathon = (item, index) => {
   const slug = item.slug || item.code || item.id || `hackathon-${index + 1}`
   const status = item.status || item.state || item.progress || 'upcoming'
@@ -47,6 +50,7 @@ const normalizeTeams = (items) =>
     name: team.name || team.teamName || `팀 ${index + 1}`,
     intro: team.intro || team.description || '',
     contact: team.contact || team.contactUrl || team.contact_url || '',
+    lookingFor: team.lookingFor || team.position || team.role || '',
     isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open),
     hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
   }))
@@ -120,10 +124,17 @@ export const useHackathonStore = defineStore('hackathon', () => {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
 
-    const parsed = JSON.parse(raw)
-    leaderboards.value = parsed.leaderboards || leaderboards.value
-    teams.value = parsed.teams || teams.value
-    submissions.value = parsed.submissions || []
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object') {
+        leaderboards.value = normalizeLeaderboards(ensureArray(parsed.leaderboards || []))
+        teams.value = normalizeTeams(ensureArray(parsed.teams || []))
+        submissions.value = ensureArray(parsed.submissions || [])
+      }
+    } catch (err) {
+      console.warn('로컬 스토리지 데이터 파싱 실패, 초기 데이터 사용:', err)
+      submissions.value = []
+    }
   }
 
   const loadData = async ({ force = false } = {}) => {
@@ -168,12 +179,19 @@ export const useHackathonStore = defineStore('hackathon', () => {
   })
 
   const getHackathonDetail = (slug) => hackathonDetail.value[slug]
-  const getTeamByCode = (code) => teams.value.find((t) => t.code === code)
+  const getTeamByCode = (code) =>
+    normalizeTeams(ensureArray(teams.value)).find((t) => t.code === code)
 
-  const getTeamsByHackathon = (slug) => teams.value.filter((t) => t.hackathonSlug === slug)
+  const getTeamsByHackathon = (slug) =>
+    normalizeTeams(ensureArray(teams.value)).filter((t) => t.hackathonSlug === slug)
 
   const getLeaderboardByHackathon = (slug) => {
-    const rows = leaderboards.value
+    const safeLeaderboards = normalizeLeaderboards(ensureArray(leaderboards.value))
+    if (!Array.isArray(leaderboards.value)) {
+      leaderboards.value = safeLeaderboards
+    }
+
+    const rows = safeLeaderboards
       .filter((entry) => entry.hackathonSlug === slug)
       .sort((a, b) => b.points - a.points)
 
@@ -193,11 +211,28 @@ export const useHackathonStore = defineStore('hackathon', () => {
   }
 
   const addTeam = (team) => {
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    if (!Array.isArray(teams.value)) {
+      teams.value = safeTeams
+    }
+
     teams.value.push(team)
     persistLocalData()
   }
 
   const submitProject = ({ hackathonSlug, teamCode, notes, fileType }) => {
+    const safeSubmissions = ensureArray(submissions.value)
+    if (!Array.isArray(submissions.value)) {
+      submissions.value = safeSubmissions
+    }
+
+    const safeLeaderboards = normalizeLeaderboards(ensureArray(leaderboards.value))
+    if (!Array.isArray(leaderboards.value)) {
+      leaderboards.value = safeLeaderboards
+    }
+
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+
     const points = Math.floor(Math.random() * 30) + 70
     submissions.value.push({
       id: Date.now(),
@@ -209,28 +244,65 @@ export const useHackathonStore = defineStore('hackathon', () => {
       points
     })
 
-    const team = teams.value.find((t) => t.code === teamCode)
+    const team = safeTeams.find((t) => t.code === teamCode)
     if (team) {
-      const existing = leaderboards.value.find(
+      const existing = safeLeaderboards.find(
         (l) => l.hackathonSlug === hackathonSlug && l.teamCode === teamCode
       )
       if (existing) {
         existing.points = Math.max(existing.points, points)
       } else {
-        leaderboards.value.push({
+        safeLeaderboards.push({
           hackathonSlug,
           teamCode,
           teamName: team.name,
           points
         })
       }
+      leaderboards.value = safeLeaderboards
       persistLocalData()
     }
   }
 
+
+  const getGlobalRankings = (period = 'all') => {
+    const entries = period === 'all'
+      ? normalizeLeaderboards(ensureArray(leaderboards.value))
+      : getRankingsByPeriod(period)
+
+    const scoreMap = new Map()
+
+    entries.forEach((entry) => {
+      if (!entry.teamCode) return
+      const key = entry.teamCode
+      if (!scoreMap.has(key)) {
+        scoreMap.set(key, {
+          teamCode: key,
+          nickname: entry.teamName || key,
+          points: 0
+        })
+      }
+
+      const row = scoreMap.get(key)
+      row.points += Number(entry.points || 0)
+    })
+
+    return [...scoreMap.values()].sort((a, b) => b.points - a.points)
+  }
+
   const getRankingsByPeriod = (period = 'all') => {
+    const safeLeaderboards = normalizeLeaderboards(ensureArray(leaderboards.value))
+    if (!Array.isArray(leaderboards.value)) {
+      leaderboards.value = safeLeaderboards
+    }
+
+    const safeSubmissions = ensureArray(submissions.value)
+    if (!Array.isArray(submissions.value)) {
+      submissions.value = safeSubmissions
+    }
+
     if (period === 'all') {
-      return [...leaderboards.value].sort((a, b) => b.points - a.points)
+      return [...safeLeaderboards].sort((a, b) => b.points - a.points)
     }
 
     const days = period === '7d' ? 7 : 30
@@ -238,13 +310,13 @@ export const useHackathonStore = defineStore('hackathon', () => {
     start.setDate(start.getDate() - days)
 
     const scoredTeamCodes = new Set(
-      submissions.value
+      safeSubmissions
         .filter((s) => new Date(s.submittedAt) >= start)
         .sort((a, b) => b.points - a.points)
         .map((s) => s.teamCode)
     )
 
-    return leaderboards.value
+    return safeLeaderboards
       .filter((entry) => scoredTeamCodes.has(entry.teamCode))
       .sort((a, b) => b.points - a.points)
   }
@@ -266,6 +338,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getTeamsByHackathon,
     getLeaderboardByHackathon,
     getRankingsByPeriod,
+    getGlobalRankings,
     addTeam,
     submitProject
   }

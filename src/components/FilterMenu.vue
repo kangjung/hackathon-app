@@ -27,5 +27,5 @@ const update = (key, value) => {
 
 <style scoped>
 .filters { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-input, select { border: 1px solid #d0d5dd; border-radius: 10px; padding: 0.6rem; }
+input, select { border: 1px solid #d0d8e6; border-radius: 12px; padding: 0.62rem; min-width: 150px; background: #fff; color: #0f172a; }
 </style>
