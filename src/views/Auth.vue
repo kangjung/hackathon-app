@@ -2,14 +2,26 @@
   <section class="auth">
     <div class="auth-card">
       <h1>로그인 / 간단 가입</h1>
-      <p>해커톤 규칙에 맞춰 로컬 저장소로 계정을 관리합니다.</p>
+      <p>일반 이용자와 운영자 로그인을 분리했습니다.</p>
 
-      <div class="tab-row">
+      <div class="tab-row role-tab-row">
+        <button :class="{ active: accountType === 'user' }" @click="switchAccountType('user')">일반 이용자</button>
+        <button :class="{ active: accountType === 'admin' }" @click="switchAccountType('admin')">운영자</button>
+      </div>
+
+      <div class="tab-row" v-if="accountType === 'user'">
         <button :class="{ active: mode === 'login' }" @click="mode = 'login'">로그인</button>
         <button :class="{ active: mode === 'signup' }" @click="mode = 'signup'">가입</button>
       </div>
 
-      <form v-if="mode === 'login'" class="form" @submit.prevent="onLogin">
+      <form v-if="accountType === 'admin'" class="form" @submit.prevent="onAdminLogin">
+        <input v-model="adminForm.id" placeholder="운영자 아이디" required />
+        <input v-model="adminForm.password" type="password" placeholder="운영자 비밀번호" required />
+        <button type="submit">운영자 로그인</button>
+        <p class="helper">데모 계정: admin / admin1234</p>
+      </form>
+
+      <form v-else-if="mode === 'login'" class="form" @submit.prevent="onLogin">
         <input v-model="loginForm.id" placeholder="아이디" required />
         <input v-model="loginForm.password" type="password" placeholder="비밀번호" required />
         <button type="submit">로그인</button>
@@ -47,21 +59,40 @@ import { POSITION_OPTIONS } from '../constants/positions'
 const router = useRouter()
 const authStore = useAuthStore()
 
+const accountType = ref('user')
 const mode = ref('login')
 const message = ref('')
 
 const loginForm = ref({ id: '', password: '' })
+const adminForm = ref({ id: 'admin', password: '' })
 const positionOptions = POSITION_OPTIONS
 const signupForm = ref({ id: '', password: '', nickname: '', mainPosition: '', customMainPosition: '' })
+
+const switchAccountType = (type) => {
+  accountType.value = type
+  if (type === 'admin') mode.value = 'login'
+  message.value = ''
+}
 
 const onLogin = () => {
   message.value = ''
 
   try {
-    authStore.login(loginForm.value)
+    authStore.login({ ...loginForm.value, role: 'user' })
     router.push('/me')
   } catch (err) {
     message.value = err instanceof Error ? err.message : '로그인에 실패했습니다.'
+  }
+}
+
+const onAdminLogin = () => {
+  message.value = ''
+
+  try {
+    authStore.login({ ...adminForm.value, role: 'admin' })
+    router.push('/hackathons')
+  } catch (err) {
+    message.value = err instanceof Error ? err.message : '운영자 로그인에 실패했습니다.'
   }
 }
 
@@ -85,10 +116,12 @@ const onSignup = () => {
 .auth { max-width: 560px; margin: 2rem auto; padding: 0 1rem; }
 .auth-card { border: 1px solid #dbe4f6; background: #fff; border-radius: 16px; padding: 1.2rem; }
 .tab-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.role-tab-row { margin-top: 0.9rem; }
 .tab-row button { border: 1px solid #dbe4f6; background: #f8faff; color: #334155; }
 .tab-row button.active { background: #4f46e5; color: #fff; }
 .form { display: grid; gap: 0.6rem; }
 input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.65rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.8rem; cursor: pointer; }
+.helper { margin: 0; color: #475569; font-size: 0.9rem; }
 .message { margin-top: 0.75rem; color: #b91c1c; font-weight: 600; }
 </style>

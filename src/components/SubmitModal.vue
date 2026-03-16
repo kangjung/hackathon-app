@@ -2,27 +2,25 @@
   <div class="backdrop" @click.self="$emit('close')">
     <div class="panel">
       <h3>결과물 제출</h3>
-      <p>파일 타입과 메모를 작성하면 리더보드 점수가 갱신됩니다.</p>
+      <p>팀 리더가 기획서/웹/PDF 링크를 제출하면 리더보드에 반영됩니다.</p>
       <select v-model="teamCode">
         <option disabled value="">내 팀 선택</option>
         <option v-for="team in teams" :key="team.code" :value="team.code">{{ team.name }}</option>
       </select>
-      <select v-model="fileType">
-        <option value="zip">ZIP</option>
-        <option value="pdf">PDF</option>
-        <option value="csv">CSV</option>
-      </select>
-      <textarea v-model="notes" placeholder="메모 (선택)"></textarea>
+      <input v-model="planningUrl" placeholder="기획서 URL 또는 설명 텍스트" required />
+      <input v-model="webUrl" type="url" placeholder="웹 페이지 URL (예: Vercel)" required />
+      <input v-model="pdfUrl" type="url" placeholder="솔루션 PDF URL" required />
+      <textarea v-model="notes" placeholder="추가 메모 (선택)"></textarea>
       <div class="actions">
         <button class="ghost" @click="$emit('close')">취소</button>
-        <button :disabled="!teamCode" @click="submit">저장/제출</button>
+        <button :disabled="!isValid" @click="submit">저장/제출</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 defineProps({
   teams: { type: Array, required: true }
@@ -30,15 +28,23 @@ defineProps({
 const emit = defineEmits(['close', 'submit'])
 
 const teamCode = ref('')
-const fileType = ref('zip')
+const planningUrl = ref('')
+const webUrl = ref('')
+const pdfUrl = ref('')
 const notes = ref('')
 
+const isValid = computed(() =>
+  Boolean(teamCode.value && planningUrl.value.trim() && webUrl.value.trim() && pdfUrl.value.trim())
+)
+
 const submit = () => {
-  if (!teamCode.value) return
+  if (!isValid.value) return
   emit('submit', {
     teamCode: teamCode.value,
-    notes: notes.value,
-    fileType: fileType.value
+    planningUrl: planningUrl.value.trim(),
+    webUrl: webUrl.value.trim(),
+    pdfUrl: pdfUrl.value.trim(),
+    notes: notes.value.trim()
   })
   emit('close')
 }
@@ -47,7 +53,7 @@ const submit = () => {
 <style scoped>
 .backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: grid; place-items: center; z-index: 40; }
 .panel { background: white; width: min(500px, 92vw); border-radius: 16px; padding: 1rem; display: grid; gap: 0.7rem; }
-select, textarea { border: 1px solid #d0d5dd; border-radius: 10px; padding: 0.6rem; }
+input, select, textarea { border: 1px solid #d0d5dd; border-radius: 10px; padding: 0.6rem; }
 .actions { display: flex; justify-content: flex-end; gap: 0.6rem; }
 button { border: none; background: #2f62ff; color: white; border-radius: 10px; padding: 0.6rem 1rem; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
