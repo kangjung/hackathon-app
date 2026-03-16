@@ -6,7 +6,7 @@
 
       <div class="hero-top">
         <p class="eyebrow">HACKATHON OPS SUITE</p>
-        <span class="status-pill">Live · 24 events</span>
+        <span class="status-pill">Live · {{ liveEventsCount }} events</span>
       </div>
 
       <h1>운영, 팀빌딩, 랭킹을 한 화면에서<br />더 빠르고 세련되게.</h1>
@@ -41,20 +41,59 @@
       <div class="stats">
         <article>
           <p>활성 프로젝트</p>
-          <strong>128+</strong>
+          <strong>{{ activeProjectsCount }}</strong>
         </article>
         <article>
           <p>모집중 팀</p>
-          <strong>57</strong>
+          <strong>{{ recruitingTeamsCount }}</strong>
         </article>
         <article>
           <p>오늘 업데이트</p>
-          <strong>32건</strong>
+          <strong>{{ todayUpdatesCount }}건</strong>
         </article>
       </div>
     </div>
   </section>
 </template>
+
+<script setup>
+import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useHackathonStore } from '../stores/hackathon'
+
+const hackathonStore = useHackathonStore()
+const { hackathons, teams, leaderboards, submissions } = storeToRefs(hackathonStore)
+
+const liveEventsCount = computed(() => hackathons.value.length)
+
+const activeProjectsCount = computed(() => {
+  const submittedProjects = submissions.value.length
+  if (submittedProjects > 0) return submittedProjects
+  return leaderboards.value.length
+})
+
+const recruitingTeamsCount = computed(() =>
+  teams.value.filter((team) => !hackathonStore.isRecruitmentClosed(team)).length
+)
+
+const todayUpdatesCount = computed(() => {
+  const today = new Date()
+  const isSameDay = (date) =>
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+
+  return submissions.value.filter((submission) => {
+    const submittedAt = new Date(submission.submittedAt)
+    if (Number.isNaN(submittedAt.getTime())) return false
+    return isSameDay(submittedAt)
+  }).length
+})
+
+onMounted(() => {
+  hackathonStore.loadData()
+})
+</script>
 
 <style scoped>
 .home {
