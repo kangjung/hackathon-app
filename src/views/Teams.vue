@@ -93,7 +93,7 @@
           <strong>모집 포지션</strong>
           <div class="position-chips" v-if="selectedTeam.positions?.length">
             <span v-for="position in selectedTeam.positions" :key="`${position.role}-${position.count}`" class="position-chip">
-              {{ position.role }} · {{ position.count }}명
+              {{ position.role }} · {{ position.count }}명 {{ store.isRoleClosed(selectedTeam, position.role) ? '(마감)' : '' }}
             </span>
           </div>
           <span v-else>-</span>
@@ -101,6 +101,12 @@
         <p class="meta"><strong>해커톤</strong><span>{{ selectedTeam.hackathonSlug || '없음' }}</span></p>
 
         <div class="apply-box" v-if="!canManageTeam(selectedTeam)">
+          <select v-model="applyRole">
+            <option disabled value="">지원 포지션 선택</option>
+            <option v-for="position in getOpenPositions(selectedTeam)" :key="position.role" :value="position.role">
+              {{ position.role }} ({{ position.remaining }}명 남음)
+            </option>
+          </select>
           <textarea v-model="applyMessage" rows="3" placeholder="팀장에게 남길 한마디 (선택)"></textarea>
           <button type="button" @click="submitJoinRequest(selectedTeam)">가입 신청</button>
           <p class="hint">기존 문의 링크는 그대로 유지됩니다.</p>
@@ -113,7 +119,7 @@
             <article v-for="request in pendingRequests(selectedTeam)" :key="request.id" class="request-card">
               <div>
                 <strong>{{ request.nickname }}</strong>
-                <p class="request-meta">@{{ request.userId }} · {{ formatDate(request.createdAt) }}</p>
+                <p class="request-meta">@{{ request.userId }} · {{ request.role || '포지션 미선택' }} · {{ formatDate(request.createdAt) }}</p>
                 <p class="request-message">{{ request.message || '메시지 없음' }}</p>
               </div>
               <div class="request-actions">
@@ -123,6 +129,32 @@
             </article>
           </div>
           <p v-else class="hint">대기 중인 신청이 없습니다.</p>
+        </div>
+
+        <div class="edit-box" v-if="canManageTeam(selectedTeam)">
+          <h3>모집 공고 수정</h3>
+          <div class="edit-grid">
+            <input v-model="editTeam.name" placeholder="팀명" />
+            <input v-model="editTeam.intro" placeholder="소개" />
+            <input v-model.number="editTeam.maxMembers" type="number" min="2" placeholder="팀 최대 인원" />
+            <input v-model="editTeam.contact" placeholder="연락 링크" />
+            <input v-model="editTeam.recruitDeadline" type="datetime-local" placeholder="모집 마감일" />
+          </div>
+          <div class="positions-section">
+            <p class="positions-title">모집 포지션 수정</p>
+            <div v-for="(position, index) in editTeam.positions" :key="`edit-${index}`" class="position-row">
+              <select v-model="position.role" required>
+                <option disabled value="">포지션 선택</option>
+                <option v-for="option in positionOptions" :key="option" :value="option">{{ option }}</option>
+                <option value="기타">기타(직접 입력)</option>
+              </select>
+              <input v-if="position.role === '기타'" v-model="position.customRole" placeholder="직접 입력" required />
+              <input v-model.number="position.count" type="number" min="1" placeholder="인원" required />
+              <button type="button" class="row-remove" @click="removeEditPosition(index)">삭제</button>
+            </div>
+            <button type="button" class="add-position" @click="addEditPosition">+ 포지션 추가</button>
+          </div>
+          <button type="button" @click="saveTeamEdit(selectedTeam)">모집 공고 저장</button>
         </div>
 
         <a v-if="selectedTeam.contact" :href="selectedTeam.contact" target="_blank" rel="noreferrer">가입 문의</a>
@@ -141,7 +173,7 @@
             <strong>모집 포지션</strong>
             <div class="position-chips" v-if="team.positions?.length">
               <span v-for="position in team.positions" :key="`${position.role}-${position.count}`" class="position-chip">
-                {{ position.role }} · {{ position.count }}명
+                {{ position.role }} · {{ position.count }}명 {{ store.isRoleClosed(team, position.role) ? '(마감)' : '' }}
               </span>
             </div>
             <span v-else>-</span>
@@ -167,7 +199,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
 import { useAuthStore } from '../stores/auth'
@@ -180,9 +212,19 @@ const authStore = useAuthStore()
 const showForm = ref(false)
 const positionOptions = POSITION_OPTIONS
 const applyMessage = ref('')
+const applyRole = ref('')
 const teamFilters = ref({ search: '', status: 'all' })
 
 const defaultPosition = () => ({ role: '', customRole: '', count: 1 })
+
+const editTeam = ref({
+  name: '',
+  intro: '',
+  maxMembers: null,
+  contact: '',
+  recruitDeadline: '',
+  positions: [defaultPosition()]
+})
 
 const newTeam = ref({
   name: '',
@@ -238,6 +280,9 @@ const selectedTeam = computed(() => {
   return store.getTeamByCode(teamCode)
 })
 
+const canManageTeam = (team) =>
+  authStore.isLoggedIn && authStore.currentUser?.id && team.ownerId === authStore.currentUser.id
+
 const addPosition = () => {
   newTeam.value.positions.push(defaultPosition())
 }
@@ -249,9 +294,6 @@ const removePosition = (index) => {
   }
   newTeam.value.positions.splice(index, 1)
 }
-
-const canManageTeam = (team) =>
-  authStore.isLoggedIn && authStore.currentUser?.id && team.ownerId === authStore.currentUser.id
 
 const getRecruitStatusText = (team) => {
   if (store.isRecruitmentClosed(team)) {
@@ -272,6 +314,14 @@ const getRecruitProgressText = (team) => {
 
 const formatDate = (value) => new Date(value).toLocaleString('ko-KR', { hour12: false })
 
+const getOpenPositions = (team) =>
+  (team.positions || [])
+    .map((position) => ({
+      ...position,
+      remaining: Math.max(Number(position.count || 0) - store.getAcceptedRoleCount(team, position.role), 0)
+    }))
+    .filter((position) => position.remaining > 0)
+
 const pendingRequests = (team) =>
   (team.joinRequests || []).filter((request) => request.status === 'pending')
 
@@ -286,9 +336,11 @@ const submitJoinRequest = (team) => {
       teamCode: team.code,
       userId: authStore.currentUser?.id,
       nickname: authStore.currentUser?.nickname,
-      message: applyMessage.value
+      message: applyMessage.value,
+      role: applyRole.value
     })
     applyMessage.value = ''
+    applyRole.value = ''
     alert('가입 신청이 접수되었습니다. 팀장의 확인을 기다려주세요.')
   } catch (error) {
     alert(error instanceof Error ? error.message : '가입 신청 중 오류가 발생했습니다.')
@@ -306,6 +358,66 @@ const reviewRequest = (team, requestId, decision) => {
     alert(decision === 'accepted' ? '신청을 승인했습니다.' : '신청을 거절했습니다.')
   } catch (error) {
     alert(error instanceof Error ? error.message : '신청 처리 중 오류가 발생했습니다.')
+  }
+}
+
+const addEditPosition = () => {
+  editTeam.value.positions.push(defaultPosition())
+}
+
+const removeEditPosition = (index) => {
+  if (editTeam.value.positions.length === 1) {
+    editTeam.value.positions = [defaultPosition()]
+    return
+  }
+  editTeam.value.positions.splice(index, 1)
+}
+
+const syncEditTeam = (team) => {
+  editTeam.value = {
+    name: team?.name || '',
+    intro: team?.intro || '',
+    maxMembers: team?.maxMembers || null,
+    contact: team?.contact || '',
+    recruitDeadline: team?.recruitDeadline || '',
+    positions: (team?.positions || []).length
+      ? team.positions.map((position) => ({ role: position.role, customRole: '', count: position.count }))
+      : [defaultPosition()]
+  }
+}
+
+watch(
+  selectedTeam,
+  (team) => {
+    if (team && canManageTeam(team)) {
+      syncEditTeam(team)
+    }
+    if (!team || canManageTeam(team)) return
+    applyRole.value = ''
+  },
+  { immediate: true }
+)
+
+const saveTeamEdit = (team) => {
+  try {
+    const positions = editTeam.value.positions
+      .map((position) => ({
+        role: position.role === '기타' ? position.customRole.trim() : position.role,
+        count: Number(position.count) > 0 ? Number(position.count) : 1
+      }))
+      .filter((position) => position.role)
+
+    store.updateTeamRecruitmentPost({
+      teamCode: team.code,
+      ownerId: authStore.currentUser?.id,
+      payload: {
+        ...editTeam.value,
+        positions
+      }
+    })
+    alert('모집 공고를 수정했습니다.')
+  } catch (error) {
+    alert(error instanceof Error ? error.message : '모집 공고 수정 중 오류가 발생했습니다.')
   }
 }
 
@@ -396,7 +508,8 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .card-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
 .apply-btn { background: #2563eb; }
 .toggle-btn { background: #0f766e; }
-.apply-box, .requests-box { margin-top: 0.9rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
+.apply-box, .requests-box, .edit-box { margin-top: 0.9rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
+.edit-grid { display: grid; gap: 0.45rem; margin-bottom: 0.55rem; }
 .requests-box h3 { margin: 0; }
 .hint { margin: 0.4rem 0 0; color: #475569; font-size: 0.85rem; }
 .request-list { display: grid; gap: 0.5rem; margin-top: 0.65rem; }
