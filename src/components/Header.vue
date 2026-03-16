@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <nav class="nav">
-      <router-link to="/" class="logo">🚀 Vibe Hackathon</router-link>
+      <router-link to="/" class="logo"> 🚀 Vibe Hackathon Platform </router-link>
       <div class="nav-links">
         <router-link to="/hackathons">해커톤</router-link>
         <router-link to="/camp">팀 모집</router-link>
@@ -12,18 +12,15 @@
 </template>
 
 <style scoped>
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  border-bottom: 1px solid #dbe4f6;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 0; }
+.nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 2rem; }
+.logo { font-size: 1.4rem; font-weight: bold; text-decoration: none; color: white; }
+.nav-links a { color: white; text-decoration: none; margin-left: 2rem; opacity: 0.9; }
+.nav-links a:hover,
+.nav-links a.router-link-active { opacity: 1; text-decoration: underline; }
+@media (max-width: 768px) {
+  .nav { flex-direction: column; gap: 1rem; }
+  .nav-links { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .nav-links a { margin-left: 0; }
 }
-.nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.2rem; }
-.logo { font-size: 1.2rem; font-weight: 800; text-decoration: none; color: #1d2c62; }
-.nav-links { display: flex; gap: 0.5rem; }
-.nav-links a { color: #334155; text-decoration: none; padding: 0.48rem 0.85rem; border-radius: 999px; transition: all 0.2s ease; }
-.nav-links a:hover, .nav-links a.router-link-active { color: #1e3a8a; background: #e9efff; }
-@media (max-width: 768px) { .nav { flex-direction: column; gap: 0.8rem; } }
 </style>

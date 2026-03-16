@@ -47,7 +47,6 @@ const normalizeTeams = (items) =>
     name: team.name || team.teamName || `팀 ${index + 1}`,
     intro: team.intro || team.description || '',
     contact: team.contact || team.contactUrl || team.contact_url || '',
-    lookingFor: team.lookingFor || team.position || team.role || '',
     isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open),
     hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
   }))
@@ -229,32 +228,6 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
   }
 
-
-  const getGlobalRankings = (period = 'all') => {
-    const entries = period === 'all'
-      ? leaderboards.value
-      : getRankingsByPeriod(period)
-
-    const scoreMap = new Map()
-
-    entries.forEach((entry) => {
-      if (!entry.teamCode) return
-      const key = entry.teamCode
-      if (!scoreMap.has(key)) {
-        scoreMap.set(key, {
-          teamCode: key,
-          nickname: entry.teamName || key,
-          points: 0
-        })
-      }
-
-      const row = scoreMap.get(key)
-      row.points += Number(entry.points || 0)
-    })
-
-    return [...scoreMap.values()].sort((a, b) => b.points - a.points)
-  }
-
   const getRankingsByPeriod = (period = 'all') => {
     if (period === 'all') {
       return [...leaderboards.value].sort((a, b) => b.points - a.points)
@@ -293,7 +266,6 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getTeamsByHackathon,
     getLeaderboardByHackathon,
     getRankingsByPeriod,
-    getGlobalRankings,
     addTeam,
     submitProject
   }
