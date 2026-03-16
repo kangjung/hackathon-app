@@ -100,10 +100,11 @@ const createTeam = () => {
 <style scoped>
 .teams { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
 .head { display: flex; justify-content: space-between; align-items: center; }
-button { border: none; border-radius: 10px; background: #2f62ff; color: #fff; padding: 0.55rem 0.9rem; cursor: pointer; }
-.form { margin: 1rem 0; background: #fff; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
-input, select { border: 1px solid #d0d5dd; border-radius: 10px; padding: 0.6rem; }
-.detail-card { background: #eef3ff; border: 1px solid #d5defa; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+button { border: none; border-radius: 10px; background: #5878ff; color: #fff; padding: 0.55rem 0.9rem; cursor: pointer; }
+.form { margin: 1rem 0; background: rgba(9, 17, 44, 0.84); border: 1px solid rgba(146, 169, 255, 0.24); padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
+input, select { border: 1px solid rgba(146, 169, 255, 0.3); border-radius: 10px; padding: 0.6rem; background: rgba(8,14,38,0.85); color: #dce7ff; }
+.detail-card { background: rgba(15, 27, 70, 0.75); border: 1px solid rgba(146, 169, 255, 0.25); border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
 .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
-.list article { background: #fff; border: 1px solid #e4e9f6; border-radius: 14px; padding: 1rem; }
+.list article { background: rgba(9, 16, 43, 0.84); border: 1px solid rgba(146, 169, 255, 0.24); border-radius: 14px; padding: 1rem; }
+a { color: #98b0ff; }
 </style>

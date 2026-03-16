@@ -44,7 +44,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.hackathons-list { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+.hackathons-list { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 </style>

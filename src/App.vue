@@ -5,7 +5,7 @@
       <router-view />
     </main>
     <footer class="footer">
-      <p>&copy; 2026 Vibe Hackathon Platform. Vercel 배포.</p>
+      <p>© 2026 Vibe Hackathon Platform · Build fast, rank smart.</p>
     </footer>
   </div>
 </template>
