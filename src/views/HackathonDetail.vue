@@ -1,8 +1,18 @@
 <template>
   <section class="detail" v-if="hackathon">
-    <header>
-      <h1>{{ detailTitle }}</h1>
-      <p>{{ overviewSummary || hackathon.summary }}</p>
+    <header class="detail-header">
+      <div>
+        <h1>{{ detailTitle }}</h1>
+        <p>{{ overviewSummary || hackathon.summary }}</p>
+      </div>
+      <button
+        class="bookmark-btn"
+        :class="{ active: isBookmarked }"
+        :disabled="!authStore.isLoggedIn"
+        @click="toggleBookmark"
+      >
+        {{ isBookmarked ? '★ 북마크됨' : '☆ 북마크' }}
+      </button>
     </header>
 
     <div class="tabs">
@@ -122,6 +132,7 @@ const myTeams = computed(() => {
   return store.getMyTeamsByHackathon({ hackathonSlug: slug.value, userId: authStore.currentUser.id })
 })
 const canSubmit = computed(() => authStore.isLoggedIn && myTeams.value.length > 0)
+const isBookmarked = computed(() => authStore.isHackathonBookmarked(slug.value))
 
 const detailTitle = computed(() => detail.value.title || hackathon.value?.title || '')
 const overviewSummary = computed(() => sections.value.overview?.summary || '')
@@ -166,6 +177,11 @@ const formatDate = (value) => {
   return date.toLocaleString('ko-KR', { hour12: false })
 }
 
+const toggleBookmark = () => {
+  if (!authStore.isLoggedIn) return
+  authStore.toggleHackathonBookmark(slug.value)
+}
+
 const openSubmit = () => {
   if (!canSubmit.value) return
   showSubmit.value = true
@@ -181,6 +197,7 @@ const onSubmit = ({ teamCode, notes, fileType }) => {
 
 <style scoped>
 .detail { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
 article { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1rem; }
 ul { margin: 0.5rem 0 0; padding-left: 1rem; }
@@ -189,4 +206,6 @@ button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; pa
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .submit-hint { color: #475569; font-size: 0.9rem; }
 a { color: #4338ca; }
+.bookmark-btn { white-space: nowrap; background: #e2e8f0; color: #1e293b; }
+.bookmark-btn.active { background: #f59e0b; color: #fff; }
 </style>

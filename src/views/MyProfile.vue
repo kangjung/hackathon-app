@@ -35,6 +35,16 @@
           </ul>
           <p v-else>아직 연결된 해커톤이 없습니다.</p>
         </article>
+
+        <article>
+          <h3>북마크한 해커톤</h3>
+          <ul v-if="bookmarkedHackathons.length">
+            <li v-for="hackathon in bookmarkedHackathons" :key="hackathon.slug">
+              <router-link :to="`/hackathons/${hackathon.slug}`">{{ hackathon.title }}</router-link>
+            </li>
+          </ul>
+          <p v-else>북마크한 해커톤이 없습니다.</p>
+        </article>
       </div>
     </template>
   </section>
@@ -66,6 +76,12 @@ const myTeams = computed(() => {
 const myHackathons = computed(() => {
   const slugSet = new Set(myTeams.value.map((team) => team.hackathonSlug).filter(Boolean))
   return hackathonStore.hackathons.filter((hackathon) => slugSet.has(hackathon.slug))
+})
+
+const bookmarkedHackathons = computed(() => {
+  const bookmarkedSlugs = authStore.currentUser?.bookmarkedHackathons || []
+  const bookmarkSet = new Set(bookmarkedSlugs)
+  return hackathonStore.hackathons.filter((hackathon) => bookmarkSet.has(hackathon.slug))
 })
 
 const myPoints = computed(() => {
