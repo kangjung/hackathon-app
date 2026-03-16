@@ -228,40 +228,6 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
   }
 
-
-  const getOverallTeamRankings = () => {
-    const scoreMap = new Map()
-
-    leaderboards.value.forEach((entry) => {
-      if (!entry.teamCode) return
-      if (!scoreMap.has(entry.teamCode)) {
-        scoreMap.set(entry.teamCode, {
-          teamCode: entry.teamCode,
-          teamName: entry.teamName,
-          totalPoints: 0,
-          bestPoints: 0,
-          hackathonCount: 0
-        })
-      }
-
-      const row = scoreMap.get(entry.teamCode)
-      row.totalPoints += Number(entry.points || 0)
-      row.bestPoints = Math.max(row.bestPoints, Number(entry.points || 0))
-      row.hackathonCount += 1
-    })
-
-    return [...scoreMap.values()]
-      .map((row) => ({
-        ...row,
-        averagePoints: row.hackathonCount ? Math.round(row.totalPoints / row.hackathonCount) : 0
-      }))
-      .sort((a, b) => {
-        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints
-        if (b.bestPoints !== a.bestPoints) return b.bestPoints - a.bestPoints
-        return b.hackathonCount - a.hackathonCount
-      })
-  }
-
   const getRankingsByPeriod = (period = 'all') => {
     if (period === 'all') {
       return [...leaderboards.value].sort((a, b) => b.points - a.points)
@@ -300,7 +266,6 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getTeamsByHackathon,
     getLeaderboardByHackathon,
     getRankingsByPeriod,
-    getOverallTeamRankings,
     addTeam,
     submitProject
   }

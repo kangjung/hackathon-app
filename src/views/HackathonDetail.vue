@@ -73,7 +73,7 @@ const onSubmit = ({ teamCode, notes, fileType }) => {
 <style scoped>
 .detail { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
 .tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
-article { background: rgba(9, 16, 43, 0.84); border-radius: 14px; border: 1px solid rgba(146, 169, 255, 0.24); padding: 1rem; }
-button { border: none; border-radius: 10px; background: #5878ff; color: #fff; padding: 0.5rem 0.8rem; cursor: pointer; }
-a { color: #9fb7ff; }
+article { background: #fff; border-radius: 14px; border: 1px solid #e4e9f6; padding: 1rem; }
+button { border: none; border-radius: 10px; background: #2f62ff; color: #fff; padding: 0.5rem 0.8rem; cursor: pointer; }
+a { color: #2f62ff; }
 </style>
