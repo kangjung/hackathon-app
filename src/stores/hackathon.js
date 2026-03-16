@@ -102,22 +102,70 @@ const normalizeLeaderboards = (items) =>
 const normalizeDetail = (detailRaw) => {
   if (!detailRaw || typeof detailRaw !== 'object') return {}
 
-  const values = Object.values(detailRaw)
-  const isMap = values.some((v) => v && typeof v === 'object' && !Array.isArray(v))
-  if (isMap) return detailRaw
+  const normalizeOne = (entry) => {
+    if (!entry || typeof entry !== 'object') return null
+    const slug = entry.slug || entry.code || entry.id
+    if (!slug) return null
 
-  const slug = detailRaw.slug || detailRaw.code || detailRaw.id
-  if (!slug) return {}
+    const sections = entry.sections && typeof entry.sections === 'object'
+      ? entry.sections
+      : {
+          overview: entry.overview || entry.description || '',
+          info: { notice: entry.guide || entry.notice || [] },
+          eval: entry.evaluation || entry.eval || '',
+          schedule: entry.schedule || entry.timeline || '',
+          prize: entry.prize || entry.reward || ''
+        }
 
-  return {
-    [slug]: {
-      overview: detailRaw.overview || detailRaw.description || '',
-      guide: detailRaw.guide || detailRaw.notice || '',
-      evaluation: detailRaw.evaluation || detailRaw.eval || '',
-      schedule: detailRaw.schedule || detailRaw.timeline || '',
-      prize: detailRaw.prize || detailRaw.reward || ''
+    return {
+      slug,
+      detail: {
+        slug,
+        title: entry.title || '',
+        sections
+      }
     }
   }
+
+  if ('sections' in detailRaw || 'extraDetails' in detailRaw) {
+    const items = [detailRaw, ...ensureArray(detailRaw.extraDetails)]
+    return items.reduce((acc, entry) => {
+      const normalized = normalizeOne(entry)
+      if (normalized) acc[normalized.slug] = normalized.detail
+      return acc
+    }, {})
+  }
+
+  if (Array.isArray(detailRaw)) {
+    return detailRaw.reduce((acc, entry) => {
+      const normalized = normalizeOne(entry)
+      if (normalized) acc[normalized.slug] = normalized.detail
+      return acc
+    }, {})
+  }
+
+  if ('slug' in detailRaw || 'code' in detailRaw || 'id' in detailRaw) {
+    const normalized = normalizeOne(detailRaw)
+    return normalized ? { [normalized.slug]: normalized.detail } : {}
+  }
+
+  return Object.entries(detailRaw).reduce((acc, [key, value]) => {
+    if (!value || typeof value !== 'object') return acc
+    if ('sections' in value) {
+      const normalized = normalizeOne({ ...value, slug: value.slug || key })
+      if (normalized) {
+        acc[normalized.slug] = normalized.detail
+        return acc
+      }
+    }
+
+    acc[key] = {
+      slug: key,
+      title: value.title || '',
+      sections: value.sections || value
+    }
+    return acc
+  }, {})
 }
 
 const fetchJsonWithFallback = async (paths) => {
