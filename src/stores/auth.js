@@ -19,8 +19,15 @@ export const useAuthStore = defineStore('auth', () => {
   const users = ref([])
   const currentUserId = ref('')
 
+  const normalizeUsers = (rawUsers) =>
+    rawUsers.map((user) => ({
+      ...user,
+      bookmarkedHackathons: Array.isArray(user.bookmarkedHackathons) ? user.bookmarkedHackathons : []
+    }))
+
   const hydrate = () => {
-    users.value = Array.isArray(readJson(USER_STORAGE_KEY, [])) ? readJson(USER_STORAGE_KEY, []) : []
+    const parsed = Array.isArray(readJson(USER_STORAGE_KEY, [])) ? readJson(USER_STORAGE_KEY, []) : []
+    users.value = normalizeUsers(parsed)
     currentUserId.value = readJson(SESSION_STORAGE_KEY, '') || ''
   }
 
@@ -46,6 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
       password,
       nickname: nickname.trim(),
       mainPosition: safePosition,
+      bookmarkedHackathons: [],
       createdAt: new Date().toISOString()
     })
     currentUserId.value = safeId
@@ -68,6 +76,41 @@ export const useAuthStore = defineStore('auth', () => {
     persist()
   }
 
+  const toggleHackathonBookmark = (slug) => {
+    if (!currentUserId.value) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    const safeSlug = String(slug || '').trim()
+    if (!safeSlug) return false
+
+    const index = users.value.findIndex((user) => user.id === currentUserId.value)
+    if (index < 0) return false
+
+    const bookmarks = Array.isArray(users.value[index].bookmarkedHackathons)
+      ? [...users.value[index].bookmarkedHackathons]
+      : []
+    const existingIndex = bookmarks.indexOf(safeSlug)
+
+    if (existingIndex >= 0) {
+      bookmarks.splice(existingIndex, 1)
+    } else {
+      bookmarks.push(safeSlug)
+    }
+
+    users.value[index] = {
+      ...users.value[index],
+      bookmarkedHackathons: bookmarks
+    }
+    persist()
+    return existingIndex < 0
+  }
+
+  const isHackathonBookmarked = (slug) => {
+    if (!currentUser.value) return false
+    return (currentUser.value.bookmarkedHackathons || []).includes(slug)
+  }
+
   const currentUser = computed(() => users.value.find((user) => user.id === currentUserId.value) || null)
   const isLoggedIn = computed(() => Boolean(currentUser.value))
 
@@ -79,6 +122,8 @@ export const useAuthStore = defineStore('auth', () => {
     hydrate,
     signup,
     login,
-    logout
+    logout,
+    toggleHackathonBookmark,
+    isHackathonBookmarked
   }
 })
