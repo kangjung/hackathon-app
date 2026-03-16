@@ -4,6 +4,8 @@ import HackathonsList from '../views/HackathonsList.vue'
 import HackathonDetail from '../views/HackathonDetail.vue'
 import Leaderboard from '../views/Leaderboard.vue'
 import Teams from '../views/Teams.vue'
+import Auth from '../views/Auth.vue'
+import MyProfile from '../views/MyProfile.vue'
 
 const routes = [
   { path: '/', component: Home },
@@ -13,7 +15,9 @@ const routes = [
   { path: '/rankings', component: Leaderboard },
   { path: '/teams', component: Teams },
   { path: '/teams/:teamCode', component: Teams, props: true },
-  { path: '/camp', component: Teams }
+  { path: '/camp', component: Teams },
+  { path: '/auth', component: Auth },
+  { path: '/me', component: MyProfile }
 ]
 
 export default createRouter({

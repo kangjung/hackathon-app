@@ -97,10 +97,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
+import { useAuthStore } from '../stores/auth'
 import StatusState from '../components/StatusState.vue'
 
 const store = useHackathonStore()
 const route = useRoute()
+const authStore = useAuthStore()
 const showForm = ref(false)
 const positionOptions = ['Frontend', 'Backend', 'Fullstack', 'AI/ML', 'Designer', 'PM']
 
@@ -144,6 +146,11 @@ const removePosition = (index) => {
 }
 
 const createTeam = () => {
+  if (!authStore.isLoggedIn) {
+    alert('팀 생성은 로그인 후 가능합니다.')
+    return
+  }
+
   const positions = newTeam.value.positions
     .map((position) => ({
       role: position.role === '기타' ? position.customRole.trim() : position.role,
@@ -154,6 +161,7 @@ const createTeam = () => {
   store.addTeam({
     code: `team-${Date.now().toString().slice(-6)}`,
     ...newTeam.value,
+    ownerNickname: authStore.currentUser?.nickname || '',
     positions,
     lookingFor: positions.map((position) => `${position.role} ${position.count}명`).join(', ')
   })
