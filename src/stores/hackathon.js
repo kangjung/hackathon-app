@@ -6,7 +6,42 @@ const STORAGE_KEY = 'vibe-hackathon-data-v1'
 const statusLabelMap = {
   ongoing: '진행중',
   upcoming: '예정',
-  closed: '종료'
+  closed: '종료',
+  ended: '종료'
+}
+
+const parsePositionText = (value) => {
+  if (!value || typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const match = trimmed.match(/^(.*?)(\d+)\s*명$/)
+  if (!match) return { role: trimmed, count: 1 }
+  return {
+    role: match[1].trim(),
+    count: Number(match[2]) || 1
+  }
+}
+
+const normalizeRecruitPositions = (team) => {
+  const source = team.positions || team.lookingFor || team.position || team.role
+  const normalized = Array.isArray(source)
+    ? source
+        .map((entry) => {
+          if (typeof entry === 'string') return parsePositionText(entry)
+          if (!entry || typeof entry !== 'object') return null
+          const role = String(entry.role || entry.name || '').trim()
+          if (!role) return null
+          return { role, count: Number(entry.count) > 0 ? Number(entry.count) : 1 }
+        })
+        .filter(Boolean)
+    : typeof source === 'string'
+      ? source
+          .split(',')
+          .map((entry) => parsePositionText(entry))
+          .filter(Boolean)
+      : []
+
+  return normalized
 }
 
 const toArray = (value) => {
@@ -49,9 +84,10 @@ const normalizeTeams = (items) =>
     code: team.code || team.teamCode || team.id || `team-${index + 1}`,
     name: team.name || team.teamName || `팀 ${index + 1}`,
     intro: team.intro || team.description || '',
-    contact: team.contact || team.contactUrl || team.contact_url || '',
+    contact: team.contact?.url || team.contact?.link || team.contact || team.contactUrl || team.contact_url || '',
+    positions: normalizeRecruitPositions(team),
     lookingFor: team.lookingFor || team.position || team.role || '',
-    isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open),
+    isOpen: typeof team.isOpen === 'boolean' ? team.isOpen : Boolean(team.lookingFor || team.open || normalizeRecruitPositions(team).length),
     hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
   }))
 
