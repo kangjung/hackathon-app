@@ -20,14 +20,14 @@ defineProps({
 </script>
 
 <style scoped>
-.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem; text-decoration: none; color: #0f172a; display: block; transition: transform 0.18s ease; }
-.card:hover { transform: translateY(-3px); }
+.card { background: linear-gradient(180deg, #fff, #f8fbff); border: 1px solid #dbe4f3; border-radius: 16px; padding: 1.2rem; text-decoration: none; color: #0f172a; display: block; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06); }
+.card:hover { transform: translateY(-4px); box-shadow: 0 16px 28px rgba(37, 99, 235, 0.14); border-color: #c7d8f6; }
 .top-row { display: flex; justify-content: space-between; align-items: start; gap: 1rem; }
-h3 { margin: 0; }
-.summary { color: #475569; }
-.badge { border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.8rem; }
+h3 { margin: 0; font-size: 1.03rem; line-height: 1.35; }
+.summary { color: #475569; margin: 0.7rem 0 0.9rem; min-height: 3em; }
+.badge { border-radius: 999px; padding: 0.25rem 0.7rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
 .badge.ongoing { background: #e8faef; color: #0f8c4b; }
 .badge.upcoming { background: #eaf0ff; color: #2c55d8; }
-.badge.closed { background: #f1f5f9; color: #475569; }
-ul { padding: 0; list-style: none; margin: 1rem 0 0; display: grid; gap: 0.3rem; color: #334155; }
+.badge.closed { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+ul { padding: 0; list-style: none; margin: 0; display: grid; gap: 0.35rem; color: #334155; font-size: 0.94rem; }
 </style>
