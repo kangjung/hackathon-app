@@ -61,7 +61,9 @@
         <ul v-if="submitGuideList.length">
           <li v-for="(guide, index) in submitGuideList" :key="`guide-${index}`">{{ guide }}</li>
         </ul>
-        <button @click="showSubmit = true">결과물 제출하기</button>
+        <p v-if="!authStore.isLoggedIn" class="submit-hint">제출은 로그인 후 가능합니다.</p>
+        <p v-else-if="!myTeams.length" class="submit-hint">내가 만든 이 해커톤 팀이 있어야 제출할 수 있습니다.</p>
+        <button :disabled="!canSubmit" @click="openSubmit">결과물 제출하기</button>
       </article>
 
       <article>
@@ -73,7 +75,7 @@
 
     <SubmitModal
       v-if="showSubmit"
-      :teams="teams"
+      :teams="myTeams"
       @close="showSubmit = false"
       @submit="onSubmit"
     />
@@ -97,11 +99,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
+import { useAuthStore } from '../stores/auth'
 import SubmitModal from '../components/SubmitModal.vue'
 import StatusState from '../components/StatusState.vue'
 
 const route = useRoute()
 const store = useHackathonStore()
+const authStore = useAuthStore()
 const showSubmit = ref(false)
 
 onMounted(() => {
@@ -113,6 +117,11 @@ const hackathon = computed(() => store.hackathons.find((h) => h.slug === slug.va
 const detail = computed(() => store.getHackathonDetail(slug.value) || {})
 const sections = computed(() => detail.value.sections || {})
 const teams = computed(() => store.getTeamsByHackathon(slug.value))
+const myTeams = computed(() => {
+  if (!authStore.currentUser?.id) return []
+  return store.getMyTeamsByHackathon({ hackathonSlug: slug.value, userId: authStore.currentUser.id })
+})
+const canSubmit = computed(() => authStore.isLoggedIn && myTeams.value.length > 0)
 
 const detailTitle = computed(() => detail.value.title || hackathon.value?.title || '')
 const overviewSummary = computed(() => sections.value.overview?.summary || '')
@@ -157,7 +166,15 @@ const formatDate = (value) => {
   return date.toLocaleString('ko-KR', { hour12: false })
 }
 
+const openSubmit = () => {
+  if (!canSubmit.value) return
+  showSubmit.value = true
+}
+
 const onSubmit = ({ teamCode, notes, fileType }) => {
+  if (!authStore.isLoggedIn) return
+  const allowed = myTeams.value.some((team) => team.code === teamCode)
+  if (!allowed) return
   store.submitProject({ hackathonSlug: slug.value, teamCode, notes, fileType })
 }
 </script>
@@ -169,5 +186,7 @@ article { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padd
 ul { margin: 0.5rem 0 0; padding-left: 1rem; }
 .links { display: flex; gap: 0.75rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.5rem 0.8rem; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.submit-hint { color: #475569; font-size: 0.9rem; }
 a { color: #4338ca; }
 </style>
