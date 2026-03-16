@@ -1,0 +1,26 @@
+[
+  {
+    "code": "team-a1",
+    "name": "Prompt Ninjas",
+    "intro": "RAG 기반 도우미를 만드는 팀",
+    "contact": "https://open.kakao.com/o/example1",
+    "isOpen": true,
+    "hackathonSlug": "ai-build-sprint"
+  },
+  {
+    "code": "team-a2",
+    "name": "Byte Benders",
+    "intro": "웹 성능 최적화와 AI UX를 담당",
+    "contact": "https://open.kakao.com/o/example2",
+    "isOpen": false,
+    "hackathonSlug": "ai-build-sprint"
+  },
+  {
+    "code": "team-x1",
+    "name": "Solo Builder",
+    "intro": "연결되지 않은 자유 모집 팀",
+    "contact": "",
+    "isOpen": true,
+    "hackathonSlug": ""
+  }
+]
