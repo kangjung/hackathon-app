@@ -5,6 +5,28 @@
       <button @click="showForm = !showForm">팀 모집글 생성</button>
     </div>
 
+    <div class="team-filters">
+      <input
+        v-model.trim="teamFilters.search"
+        type="search"
+        placeholder="팀명/소개/포지션 검색"
+      />
+      <select v-model="teamFilters.status">
+        <option value="all">전체 상태</option>
+        <option value="open">모집중</option>
+        <option value="closed">모집 마감</option>
+      </select>
+      <button
+        v-if="hasActiveTeamFilters"
+        type="button"
+        class="reset-filters"
+        @click="resetTeamFilters"
+      >
+        필터 초기화
+      </button>
+    </div>
+    <p class="filter-result">총 {{ store.teams.length }}팀 중 {{ filteredTeams.length }}팀 표시</p>
+
     <StatusState
       v-if="store.isLoading"
       type="loading"
@@ -158,6 +180,7 @@ const authStore = useAuthStore()
 const showForm = ref(false)
 const positionOptions = POSITION_OPTIONS
 const applyMessage = ref('')
+const teamFilters = ref({ search: '', status: 'all' })
 
 const defaultPosition = () => ({ role: '', customRole: '', count: 1 })
 
@@ -178,9 +201,36 @@ onMounted(() => {
 
 const filteredTeams = computed(() => {
   const hackathon = route.query.hackathon
-  if (!hackathon) return store.teams
-  return store.teams.filter((t) => t.hackathonSlug === hackathon)
+  const keyword = teamFilters.value.search.toLowerCase()
+
+  return store.teams
+    .filter((team) => {
+      if (hackathon && team.hackathonSlug !== hackathon) return false
+      if (teamFilters.value.status === 'open' && store.isRecruitmentClosed(team)) return false
+      if (teamFilters.value.status === 'closed' && !store.isRecruitmentClosed(team)) return false
+
+      if (!keyword) return true
+      const searchableText = [
+        team.name,
+        team.intro,
+        ...(team.positions || []).map((position) => position.role)
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return searchableText.includes(keyword)
+    })
+    .sort((a, b) => Number(store.isRecruitmentClosed(a)) - Number(store.isRecruitmentClosed(b)))
 })
+
+const hasActiveTeamFilters = computed(
+  () => teamFilters.value.status !== 'all' || Boolean(teamFilters.value.search)
+)
+
+const resetTeamFilters = () => {
+  teamFilters.value = { search: '', status: 'all' }
+}
 
 const selectedTeam = computed(() => {
   const teamCode = route.params.teamCode
@@ -314,6 +364,11 @@ const createTeam = () => {
 .teams { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25); }
+.team-filters { margin: 0.3rem 0 0.2rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.team-filters input,
+.team-filters select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.62rem; min-width: 200px; background: #fff; color: #0f172a; }
+.reset-filters { background: #fff; color: #334155; border: 1px solid #cbd5e1; box-shadow: none; }
+.filter-result { margin: 0.1rem 0 0.8rem; color: #475569; }
 .form { margin: 1rem 0; background: #fff; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
 input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem; background: #fff; color: #0f172a; }
 .positions-section { border: 1px dashed #c7d2fe; border-radius: 12px; padding: 0.75rem; display: grid; gap: 0.5rem; }
