@@ -92,6 +92,21 @@ const normalizeTeams = (items) =>
     ownerId: team.ownerId || team.owner || '',
     ownerNickname: team.ownerNickname || '',
     members: Array.isArray(team.members) ? team.members : [],
+    memberCount: Number(team.memberCount) || (Array.isArray(team.members) ? team.members.length : 0),
+    maxMembers: Number(team.maxMembers) > 0 ? Number(team.maxMembers) : null,
+    joinRequests: Array.isArray(team.joinRequests)
+      ? team.joinRequests
+          .map((request) => ({
+            id: request.id || `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            userId: String(request.userId || '').trim(),
+            nickname: String(request.nickname || request.userId || '').trim(),
+            message: String(request.message || '').trim(),
+            createdAt: request.createdAt || new Date().toISOString(),
+            status: request.status === 'accepted' || request.status === 'rejected' ? request.status : 'pending',
+            reviewedAt: request.reviewedAt || null
+          }))
+          .filter((request) => request.userId)
+      : [],
     hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
   }))
 
@@ -322,6 +337,114 @@ export const useHackathonStore = defineStore('hackathon', () => {
     persistLocalData()
   }
 
+  const applyToTeam = ({ teamCode, userId, nickname, message = '' }) => {
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    if (!Array.isArray(teams.value)) {
+      teams.value = safeTeams
+    }
+
+    const index = safeTeams.findIndex((team) => team.code === teamCode)
+    if (index < 0) {
+      throw new Error('팀 정보를 찾을 수 없습니다.')
+    }
+
+    const team = safeTeams[index]
+    if (isRecruitmentClosed(team)) {
+      throw new Error('모집이 마감된 팀입니다.')
+    }
+
+    const safeUserId = String(userId || '').trim()
+    if (!safeUserId) {
+      throw new Error('로그인이 필요합니다.')
+    }
+
+    const alreadyMember = Array.isArray(team.members) && team.members.includes(safeUserId)
+    if (alreadyMember) {
+      throw new Error('이미 팀 멤버입니다.')
+    }
+
+    const hasPendingRequest = team.joinRequests.some(
+      (request) => request.userId === safeUserId && request.status === 'pending'
+    )
+    if (hasPendingRequest) {
+      throw new Error('이미 가입 신청이 접수되었습니다.')
+    }
+
+    team.joinRequests.push({
+      id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      userId: safeUserId,
+      nickname: String(nickname || safeUserId).trim(),
+      message: String(message || '').trim(),
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      reviewedAt: null
+    })
+
+    teams.value = safeTeams
+    persistLocalData()
+  }
+
+  const reviewJoinRequest = ({ teamCode, requestId, reviewerId, decision }) => {
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    if (!Array.isArray(teams.value)) {
+      teams.value = safeTeams
+    }
+
+    const team = safeTeams.find((item) => item.code === teamCode)
+    if (!team) {
+      throw new Error('팀 정보를 찾을 수 없습니다.')
+    }
+
+    if (team.ownerId && team.ownerId !== reviewerId) {
+      throw new Error('팀장만 신청을 처리할 수 있습니다.')
+    }
+
+    const request = team.joinRequests.find((item) => item.id === requestId)
+    if (!request) {
+      throw new Error('신청 정보를 찾을 수 없습니다.')
+    }
+    if (request.status !== 'pending') {
+      throw new Error('이미 처리된 신청입니다.')
+    }
+
+    if (decision === 'accepted') {
+      team.members = Array.isArray(team.members) ? team.members : []
+      if (!team.members.includes(request.userId)) {
+        team.members.push(request.userId)
+      }
+      team.memberCount = team.members.length
+      if (team.maxMembers && team.memberCount >= team.maxMembers) {
+        team.isOpen = false
+      }
+    }
+
+    request.status = decision === 'accepted' ? 'accepted' : 'rejected'
+    request.reviewedAt = new Date().toISOString()
+
+    teams.value = safeTeams
+    persistLocalData()
+  }
+
+  const setTeamRecruitmentOpen = ({ teamCode, ownerId, isOpen }) => {
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    if (!Array.isArray(teams.value)) {
+      teams.value = safeTeams
+    }
+
+    const team = safeTeams.find((item) => item.code === teamCode)
+    if (!team) {
+      throw new Error('팀 정보를 찾을 수 없습니다.')
+    }
+
+    if (team.ownerId && team.ownerId !== ownerId) {
+      throw new Error('팀장만 모집 상태를 변경할 수 있습니다.')
+    }
+
+    team.isOpen = Boolean(isOpen)
+    teams.value = safeTeams
+    persistLocalData()
+  }
+
   const submitProject = ({ hackathonSlug, teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
     const safeSubmissions = ensureArray(submissions.value)
     if (!Array.isArray(submissions.value)) {
@@ -461,6 +584,9 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getMyTeamsByHackathon,
     isRecruitmentClosed,
     addTeam,
+    applyToTeam,
+    reviewJoinRequest,
+    setTeamRecruitmentOpen,
     submitProject,
     getSubmissionByTeam
   }
