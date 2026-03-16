@@ -4,6 +4,9 @@
       <h1>해커톤 목록</h1>
       <FilterMenu :filters="store.filters" @update:filters="store.filters = $event" />
     </div>
+    <p class="result-meta">
+      총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
+    </p>
 
     <StatusState
       v-if="store.isLoading"
@@ -46,5 +49,7 @@ onMounted(() => {
 <style scoped>
 .hackathons-list { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem; }
+.result-meta { margin: -0.4rem 0 1rem; color: #475569; }
+.result-meta strong { color: #1e293b; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 </style>
