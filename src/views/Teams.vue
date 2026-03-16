@@ -65,7 +65,7 @@
           <span v-else>-</span>
         </div>
         <p class="meta"><strong>해커톤</strong><span>{{ selectedTeam.hackathonSlug || '없음' }}</span></p>
-        <a v-if="selectedTeam.contact" :href="selectedTeam.contact" target="_blank" rel="noreferrer">연락하기</a>
+        <a v-if="selectedTeam.contact" :href="selectedTeam.contact" target="_blank" rel="noreferrer">가입 문의</a>
       </article>
 
       <div class="list" v-if="filteredTeams.length">
@@ -86,7 +86,7 @@
             <span v-else>-</span>
           </div>
           <p class="meta" v-if="team.hackathonSlug"><strong>해커톤</strong><span>{{ team.hackathonSlug }}</span></p>
-          <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">연락하기 ↗</a>
+          <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">가입 문의 ↗</a>
         </article>
       </div>
       <StatusState v-else type="empty" message="조건에 맞는 팀이 없습니다." />

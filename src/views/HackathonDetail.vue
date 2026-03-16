@@ -57,13 +57,13 @@
       </article>
 
       <article>
-        <h3>팀(캠프)</h3>
+        <h3>팀 캠프</h3>
         <p>현재 {{ teams.length }}팀 모집/참여 중</p>
-        <router-link :to="teamsListUrl">이 해커톤 팀 보기/생성</router-link>
+        <router-link :to="teamsListUrl">팀 목록 확인 / 가입 문의</router-link>
       </article>
 
       <article>
-        <h3>제출(Submit)</h3>
+        <h3>제출하기</h3>
         <p>
           허용 제출 형식:
           {{ submitTypes.length ? submitTypes.join(', ') : '미지정' }}
@@ -73,7 +73,7 @@
         </ul>
         <p v-if="!authStore.isLoggedIn" class="submit-hint">제출은 로그인 후 가능합니다.</p>
         <p v-else-if="!myTeams.length" class="submit-hint">내가 만든 이 해커톤 팀이 있어야 제출할 수 있습니다.</p>
-        <button :disabled="!canSubmit" @click="openSubmit">결과물 제출하기</button>
+        <button :disabled="!canSubmit" @click="openSubmit">제출하기</button>
       </article>
 
       <article>
@@ -187,11 +187,11 @@ const openSubmit = () => {
   showSubmit.value = true
 }
 
-const onSubmit = ({ teamCode, notes, fileType }) => {
+const onSubmit = ({ teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
   if (!authStore.isLoggedIn) return
   const allowed = myTeams.value.some((team) => team.code === teamCode)
   if (!allowed) return
-  store.submitProject({ hackathonSlug: slug.value, teamCode, notes, fileType })
+  store.submitProject({ hackathonSlug: slug.value, teamCode, planningUrl, webUrl, pdfUrl, notes })
 }
 </script>
 

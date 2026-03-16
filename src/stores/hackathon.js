@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-const STORAGE_KEY = 'vibe-hackathon-data-v1'
+const STORAGE_KEY = 'vibe-hackathon-data-v2'
 
 const statusLabelMap = {
   ongoing: '진행중',
@@ -322,7 +322,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     persistLocalData()
   }
 
-  const submitProject = ({ hackathonSlug, teamCode, notes, fileType }) => {
+  const submitProject = ({ hackathonSlug, teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
     const safeSubmissions = ensureArray(submissions.value)
     if (!Array.isArray(submissions.value)) {
       submissions.value = safeSubmissions
@@ -336,13 +336,19 @@ export const useHackathonStore = defineStore('hackathon', () => {
     const safeTeams = normalizeTeams(ensureArray(teams.value))
 
     const points = Math.floor(Math.random() * 30) + 70
+    const evaluatorScore = Math.floor(Math.random() * 25) + 75
+    const participantScore = Math.floor(Math.random() * 25) + 70
     submissions.value.push({
       id: Date.now(),
       hackathonSlug,
       teamCode,
+      planningUrl,
+      webUrl,
+      pdfUrl,
       notes,
-      fileType,
       submittedAt: new Date().toISOString(),
+      evaluatorScore,
+      participantScore,
       points
     })
 
@@ -366,6 +372,17 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
   }
 
+
+  const getSubmissionByTeam = ({ hackathonSlug, teamCode }) => {
+    const safeSubmissions = ensureArray(submissions.value)
+    if (!Array.isArray(submissions.value)) {
+      submissions.value = safeSubmissions
+    }
+
+    return safeSubmissions
+      .filter((entry) => entry.hackathonSlug === hackathonSlug && entry.teamCode === teamCode)
+      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0] || null
+  }
 
   const getGlobalRankings = (period = 'all') => {
     const entries = period === 'all'
@@ -444,6 +461,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getMyTeamsByHackathon,
     isRecruitmentClosed,
     addTeam,
-    submitProject
+    submitProject,
+    getSubmissionByTeam
   }
 })
