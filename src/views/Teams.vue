@@ -40,6 +40,7 @@
           </div>
           <button type="button" class="add-position" @click="addPosition">+ 포지션 추가</button>
         </div>
+        <input v-model.number="newTeam.maxMembers" type="number" min="2" placeholder="팀 최대 인원(선택)" />
         <input v-model="newTeam.contact" placeholder="연락 링크(contact.url)" />
         <input v-model="newTeam.recruitDeadline" type="datetime-local" placeholder="모집 마감일(선택)" />
         <select v-model="newTeam.hackathonSlug">
@@ -51,10 +52,21 @@
       </form>
 
       <article v-if="selectedTeam" class="detail-card">
-        <h2>{{ selectedTeam.name }}</h2>
+        <div class="detail-header">
+          <h2>{{ selectedTeam.name }}</h2>
+          <button
+            v-if="canManageTeam(selectedTeam)"
+            type="button"
+            class="toggle-btn"
+            @click="toggleRecruitment(selectedTeam)"
+          >
+            {{ store.isRecruitmentClosed(selectedTeam) ? '모집 재오픈' : '모집 마감 처리' }}
+          </button>
+        </div>
         <p>{{ selectedTeam.intro }}</p>
         <p class="meta"><strong>코드</strong><span>{{ selectedTeam.code }}</span></p>
         <p class="meta"><strong>모집 상태</strong><span>{{ getRecruitStatusText(selectedTeam) }}</span></p>
+        <p class="meta"><strong>모집 현황</strong><span>{{ getRecruitProgressText(selectedTeam) }}</span></p>
         <div class="meta">
           <strong>모집 포지션</strong>
           <div class="position-chips" v-if="selectedTeam.positions?.length">
@@ -65,6 +77,32 @@
           <span v-else>-</span>
         </div>
         <p class="meta"><strong>해커톤</strong><span>{{ selectedTeam.hackathonSlug || '없음' }}</span></p>
+
+        <div class="apply-box" v-if="!canManageTeam(selectedTeam)">
+          <textarea v-model="applyMessage" rows="3" placeholder="팀장에게 남길 한마디 (선택)"></textarea>
+          <button type="button" @click="submitJoinRequest(selectedTeam)">가입 신청</button>
+          <p class="hint">기존 문의 링크는 그대로 유지됩니다.</p>
+        </div>
+
+        <div class="requests-box" v-if="canManageTeam(selectedTeam)">
+          <h3>가입 신청 관리</h3>
+          <p class="hint">팀장이 신청을 승인/거절할 수 있습니다.</p>
+          <div v-if="pendingRequests(selectedTeam).length" class="request-list">
+            <article v-for="request in pendingRequests(selectedTeam)" :key="request.id" class="request-card">
+              <div>
+                <strong>{{ request.nickname }}</strong>
+                <p class="request-meta">@{{ request.userId }} · {{ formatDate(request.createdAt) }}</p>
+                <p class="request-message">{{ request.message || '메시지 없음' }}</p>
+              </div>
+              <div class="request-actions">
+                <button type="button" class="approve" @click="reviewRequest(selectedTeam, request.id, 'accepted')">승인</button>
+                <button type="button" class="reject" @click="reviewRequest(selectedTeam, request.id, 'rejected')">거절</button>
+              </div>
+            </article>
+          </div>
+          <p v-else class="hint">대기 중인 신청이 없습니다.</p>
+        </div>
+
         <a v-if="selectedTeam.contact" :href="selectedTeam.contact" target="_blank" rel="noreferrer">가입 문의</a>
       </article>
 
@@ -76,6 +114,7 @@
           </div>
           <p class="intro">{{ team.intro }}</p>
           <p class="meta"><strong>코드</strong><span>{{ team.code }}</span></p>
+          <p class="meta"><strong>모집 현황</strong><span>{{ getRecruitProgressText(team) }}</span></p>
           <div class="meta">
             <strong>모집 포지션</strong>
             <div class="position-chips" v-if="team.positions?.length">
@@ -86,7 +125,18 @@
             <span v-else>-</span>
           </div>
           <p class="meta" v-if="team.hackathonSlug"><strong>해커톤</strong><span>{{ team.hackathonSlug }}</span></p>
-          <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">가입 문의 ↗</a>
+          <div class="card-actions">
+            <button v-if="!canManageTeam(team)" type="button" class="apply-btn" @click="submitJoinRequest(team)">가입 신청</button>
+            <button
+              v-if="canManageTeam(team)"
+              type="button"
+              class="toggle-btn"
+              @click="toggleRecruitment(team)"
+            >
+              {{ store.isRecruitmentClosed(team) ? '재오픈' : '모집 마감' }}
+            </button>
+            <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">가입 문의 ↗</a>
+          </div>
         </article>
       </div>
       <StatusState v-else type="empty" message="조건에 맞는 팀이 없습니다." />
@@ -107,6 +157,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const showForm = ref(false)
 const positionOptions = POSITION_OPTIONS
+const applyMessage = ref('')
 
 const defaultPosition = () => ({ role: '', customRole: '', count: 1 })
 
@@ -114,6 +165,7 @@ const newTeam = ref({
   name: '',
   intro: '',
   positions: [defaultPosition()],
+  maxMembers: null,
   contact: '',
   hackathonSlug: '',
   recruitDeadline: '',
@@ -148,6 +200,8 @@ const removePosition = (index) => {
   newTeam.value.positions.splice(index, 1)
 }
 
+const canManageTeam = (team) =>
+  authStore.isLoggedIn && authStore.currentUser?.id && team.ownerId === authStore.currentUser.id
 
 const getRecruitStatusText = (team) => {
   if (store.isRecruitmentClosed(team)) {
@@ -155,6 +209,66 @@ const getRecruitStatusText = (team) => {
   }
   if (!team.recruitDeadline) return '모집중'
   return `모집중 · ${new Date(team.recruitDeadline).toLocaleString('ko-KR', { hour12: false })} 마감`
+}
+
+const getRecruitProgressText = (team) => {
+  const current = Number(team.memberCount) || team.members?.length || 0
+  if (team.maxMembers) {
+    const remaining = Math.max(team.maxMembers - current, 0)
+    return `${current}/${team.maxMembers}명 · ${remaining}명 모집중`
+  }
+  return `${current}명 참여중`
+}
+
+const formatDate = (value) => new Date(value).toLocaleString('ko-KR', { hour12: false })
+
+const pendingRequests = (team) =>
+  (team.joinRequests || []).filter((request) => request.status === 'pending')
+
+const submitJoinRequest = (team) => {
+  if (!authStore.isLoggedIn) {
+    alert('가입 신청은 로그인 후 가능합니다.')
+    return
+  }
+
+  try {
+    store.applyToTeam({
+      teamCode: team.code,
+      userId: authStore.currentUser?.id,
+      nickname: authStore.currentUser?.nickname,
+      message: applyMessage.value
+    })
+    applyMessage.value = ''
+    alert('가입 신청이 접수되었습니다. 팀장의 확인을 기다려주세요.')
+  } catch (error) {
+    alert(error instanceof Error ? error.message : '가입 신청 중 오류가 발생했습니다.')
+  }
+}
+
+const reviewRequest = (team, requestId, decision) => {
+  try {
+    store.reviewJoinRequest({
+      teamCode: team.code,
+      requestId,
+      reviewerId: authStore.currentUser?.id,
+      decision
+    })
+    alert(decision === 'accepted' ? '신청을 승인했습니다.' : '신청을 거절했습니다.')
+  } catch (error) {
+    alert(error instanceof Error ? error.message : '신청 처리 중 오류가 발생했습니다.')
+  }
+}
+
+const toggleRecruitment = (team) => {
+  try {
+    store.setTeamRecruitmentOpen({
+      teamCode: team.code,
+      ownerId: authStore.currentUser?.id,
+      isOpen: store.isRecruitmentClosed(team)
+    })
+  } catch (error) {
+    alert(error instanceof Error ? error.message : '모집 상태 변경 중 오류가 발생했습니다.')
+  }
 }
 
 const createTeam = () => {
@@ -176,10 +290,22 @@ const createTeam = () => {
     ownerId: authStore.currentUser?.id || '',
     ownerNickname: authStore.currentUser?.nickname || '',
     members: [authStore.currentUser?.id].filter(Boolean),
+    memberCount: 1,
+    maxMembers: Number(newTeam.value.maxMembers) > 1 ? Number(newTeam.value.maxMembers) : null,
+    joinRequests: [],
     positions,
     lookingFor: positions.map((position) => `${position.role} ${position.count}명`).join(', ')
   })
-  newTeam.value = { name: '', intro: '', positions: [defaultPosition()], contact: '', hackathonSlug: '', recruitDeadline: '', isOpen: true }
+  newTeam.value = {
+    name: '',
+    intro: '',
+    positions: [defaultPosition()],
+    maxMembers: null,
+    contact: '',
+    hackathonSlug: '',
+    recruitDeadline: '',
+    isOpen: true
+  }
   showForm.value = false
 }
 </script>
@@ -189,7 +315,7 @@ const createTeam = () => {
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25); }
 .form { margin: 1rem 0; background: #fff; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
-input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem; background: #fff; color: #0f172a; }
+input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem; background: #fff; color: #0f172a; }
 .positions-section { border: 1px dashed #c7d2fe; border-radius: 12px; padding: 0.75rem; display: grid; gap: 0.5rem; }
 .positions-title { margin: 0; font-weight: 700; color: #312e81; }
 .position-row { display: flex; gap: 0.45rem; align-items: center; }
@@ -198,6 +324,7 @@ input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem;
 .row-remove { background: #e2e8f0; color: #334155; box-shadow: none; }
 .add-position { background: #eef2ff; color: #4338ca; box-shadow: none; }
 .detail-card { background: #eef2ff; border: 1px solid #d9e2ff; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 12px 28px rgba(59, 130, 246, 0.13); }
+.detail-header { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; }
 .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
 .team-card { background: linear-gradient(180deg, #fff, #f9fbff); border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06); }
 .team-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.6rem; }
@@ -210,5 +337,18 @@ input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem;
 .meta strong { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #1e1b4b; font-weight: 800; }
 .position-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .position-chip { font-size: 0.78rem; padding: 0.18rem 0.5rem; border-radius: 999px; background: #e0e7ff; color: #312e81; font-weight: 700; }
-.contact-link { display: inline-block; margin-top: 0.65rem; color: #4338ca; font-weight: 700; text-decoration: none; }
+.contact-link { display: inline-block; color: #4338ca; font-weight: 700; text-decoration: none; }
+.card-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+.apply-btn { background: #2563eb; }
+.toggle-btn { background: #0f766e; }
+.apply-box, .requests-box { margin-top: 0.9rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
+.requests-box h3 { margin: 0; }
+.hint { margin: 0.4rem 0 0; color: #475569; font-size: 0.85rem; }
+.request-list { display: grid; gap: 0.5rem; margin-top: 0.65rem; }
+.request-card { padding: 0.6rem; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+.request-meta { margin: 0.2rem 0; color: #64748b; font-size: 0.8rem; }
+.request-message { margin: 0; color: #334155; }
+.request-actions { display: flex; gap: 0.35rem; }
+.request-actions .approve { background: #16a34a; }
+.request-actions .reject { background: #dc2626; }
 </style>
