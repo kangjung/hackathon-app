@@ -101,6 +101,7 @@ const normalizeTeams = (items) =>
             userId: String(request.userId || '').trim(),
             nickname: String(request.nickname || request.userId || '').trim(),
             message: String(request.message || '').trim(),
+            role: String(request.role || '').trim(),
             createdAt: request.createdAt || new Date().toISOString(),
             status: request.status === 'accepted' || request.status === 'rejected' ? request.status : 'pending',
             reviewedAt: request.reviewedAt || null
@@ -337,7 +338,18 @@ export const useHackathonStore = defineStore('hackathon', () => {
     persistLocalData()
   }
 
-  const applyToTeam = ({ teamCode, userId, nickname, message = '' }) => {
+  const getAcceptedRoleCount = (team, role) =>
+    (team.joinRequests || []).filter(
+      (request) => request.status === 'accepted' && request.role === role
+    ).length
+
+  const isRoleClosed = (team, role) => {
+    const position = (team.positions || []).find((item) => item.role === role)
+    if (!position) return false
+    return getAcceptedRoleCount(team, role) >= Number(position.count || 0)
+  }
+
+  const applyToTeam = ({ teamCode, userId, nickname, message = '', role = '' }) => {
     const safeTeams = normalizeTeams(ensureArray(teams.value))
     if (!Array.isArray(teams.value)) {
       teams.value = safeTeams
@@ -351,6 +363,14 @@ export const useHackathonStore = defineStore('hackathon', () => {
     const team = safeTeams[index]
     if (isRecruitmentClosed(team)) {
       throw new Error('모집이 마감된 팀입니다.')
+    }
+
+    const safeRole = String(role || '').trim()
+    if (!safeRole) {
+      throw new Error('지원 포지션을 선택해주세요.')
+    }
+    if (isRoleClosed(team, safeRole)) {
+      throw new Error('선택한 포지션은 이미 마감되었습니다.')
     }
 
     const safeUserId = String(userId || '').trim()
@@ -375,6 +395,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
       userId: safeUserId,
       nickname: String(nickname || safeUserId).trim(),
       message: String(message || '').trim(),
+      role: safeRole,
       createdAt: new Date().toISOString(),
       status: 'pending',
       reviewedAt: null
@@ -408,12 +429,22 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
 
     if (decision === 'accepted') {
+      if (request.role && isRoleClosed(team, request.role)) {
+        throw new Error('이미 마감된 포지션입니다. 다른 신청을 선택해주세요.')
+      }
+
       team.members = Array.isArray(team.members) ? team.members : []
       if (!team.members.includes(request.userId)) {
         team.members.push(request.userId)
       }
       team.memberCount = team.members.length
-      if (team.maxMembers && team.memberCount >= team.maxMembers) {
+
+      const positions = team.positions || []
+      const allRolesClosed = positions.length
+        ? positions.every((position) => isRoleClosed(team, position.role))
+        : false
+
+      if ((team.maxMembers && team.memberCount >= team.maxMembers) || allRolesClosed) {
         team.isOpen = false
       }
     }
@@ -441,6 +472,42 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
 
     team.isOpen = Boolean(isOpen)
+    teams.value = safeTeams
+    persistLocalData()
+  }
+
+  const updateTeamRecruitmentPost = ({ teamCode, ownerId, payload }) => {
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    if (!Array.isArray(teams.value)) {
+      teams.value = safeTeams
+    }
+
+    const team = safeTeams.find((item) => item.code === teamCode)
+    if (!team) {
+      throw new Error('팀 정보를 찾을 수 없습니다.')
+    }
+
+    if (team.ownerId && team.ownerId !== ownerId) {
+      throw new Error('팀장만 모집 공고를 수정할 수 있습니다.')
+    }
+
+    const nextPositions = Array.isArray(payload.positions)
+      ? payload.positions
+          .map((position) => ({
+            role: String(position.role || '').trim(),
+            count: Number(position.count) > 0 ? Number(position.count) : 1
+          }))
+          .filter((position) => position.role)
+      : team.positions
+
+    team.name = String(payload.name || team.name).trim()
+    team.intro = String(payload.intro || team.intro).trim()
+    team.contact = String(payload.contact || '').trim()
+    team.recruitDeadline = String(payload.recruitDeadline || '').trim()
+    team.maxMembers = Number(payload.maxMembers) > 1 ? Number(payload.maxMembers) : null
+    team.positions = nextPositions
+    team.lookingFor = nextPositions.map((position) => `${position.role} ${position.count}명`).join(', ')
+
     teams.value = safeTeams
     persistLocalData()
   }
@@ -587,6 +654,9 @@ export const useHackathonStore = defineStore('hackathon', () => {
     applyToTeam,
     reviewJoinRequest,
     setTeamRecruitmentOpen,
+    updateTeamRecruitmentPost,
+    getAcceptedRoleCount,
+    isRoleClosed,
     submitProject,
     getSubmissionByTeam
   }
