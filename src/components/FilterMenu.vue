@@ -9,7 +9,8 @@
       <option value="all">전체</option>
       <option value="ongoing">진행중</option>
       <option value="upcoming">예정</option>
-      <option value="closed">종료</option>
+      <option value="ended">종료</option>
+      <option value="closed">종료(구버전)</option>
     </select>
   </div>
 </template>
