@@ -21,12 +21,13 @@
       <form v-if="showForm" class="form" @submit.prevent="createTeam">
         <input v-model="newTeam.name" placeholder="팀명(필수)" required />
         <input v-model="newTeam.intro" placeholder="소개(필수)" required />
+        <input v-model="newTeam.lookingFor" placeholder="모집 포지션(예: FE 1명, 디자이너 1명)" />
         <input v-model="newTeam.contact" placeholder="연락 링크(contact.url)" />
         <select v-model="newTeam.hackathonSlug">
           <option value="">해커톤 미연결</option>
           <option v-for="h in store.hackathons" :key="h.slug" :value="h.slug">{{ h.title }}</option>
         </select>
-        <label><input type="checkbox" v-model="newTeam.isOpen" /> 모집중</label>
+        <label><input type="checkbox" v-model="newTeam.isOpen" /> 모집중(isOpen)</label>
         <button type="submit">저장</button>
       </form>
 
@@ -35,6 +36,7 @@
         <p>{{ selectedTeam.intro }}</p>
         <p>코드: {{ selectedTeam.code }}</p>
         <p>모집 상태: {{ selectedTeam.isOpen ? '모집중' : '마감' }}</p>
+        <p>모집 포지션: {{ selectedTeam.lookingFor || '-' }}</p>
         <p>연결 해커톤: {{ selectedTeam.hackathonSlug || '없음' }}</p>
         <a v-if="selectedTeam.contact" :href="selectedTeam.contact" target="_blank" rel="noreferrer">연락하기</a>
       </article>
@@ -44,6 +46,7 @@
           <h3>{{ team.name }}</h3>
           <p>{{ team.intro }}</p>
           <p>코드: {{ team.code }} · 상태: {{ team.isOpen ? '모집중' : '마감' }}</p>
+          <p>모집 포지션: {{ team.lookingFor || '-' }}</p>
           <p v-if="team.hackathonSlug">해커톤: {{ team.hackathonSlug }}</p>
           <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer">연락하기</a>
         </article>
@@ -66,6 +69,7 @@ const showForm = ref(false)
 const newTeam = ref({
   name: '',
   intro: '',
+  lookingFor: '',
   contact: '',
   hackathonSlug: '',
   isOpen: true
@@ -92,7 +96,7 @@ const createTeam = () => {
     code: `team-${Date.now().toString().slice(-6)}`,
     ...newTeam.value
   })
-  newTeam.value = { name: '', intro: '', contact: '', hackathonSlug: '', isOpen: true }
+  newTeam.value = { name: '', intro: '', lookingFor: '', contact: '', hackathonSlug: '', isOpen: true }
   showForm.value = false
 }
 </script>
@@ -100,10 +104,11 @@ const createTeam = () => {
 <style scoped>
 .teams { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
 .head { display: flex; justify-content: space-between; align-items: center; }
-button { border: none; border-radius: 10px; background: #2f62ff; color: #fff; padding: 0.55rem 0.9rem; cursor: pointer; }
-.form { margin: 1rem 0; background: #fff; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
-input, select { border: 1px solid #d0d5dd; border-radius: 10px; padding: 0.6rem; }
-.detail-card { background: #eef3ff; border: 1px solid #d5defa; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
+button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.55rem 0.9rem; cursor: pointer; }
+.form { margin: 1rem 0; background: #fff; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 14px; display: grid; gap: 0.6rem; }
+input, select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.6rem; background: #fff; color: #0f172a; }
+.detail-card { background: #eef2ff; border: 1px solid #d9e2ff; border-radius: 14px; padding: 1rem; margin-bottom: 1rem; }
 .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
-.list article { background: #fff; border: 1px solid #e4e9f6; border-radius: 14px; padding: 1rem; }
+.list article { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1rem; }
+a { color: #4338ca; }
 </style>

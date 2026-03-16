@@ -15,7 +15,7 @@ defineEmits(['retry'])
 </script>
 
 <style scoped>
-.state { background: #fff; border-radius: 12px; border: 1px solid #e4e9f6; padding: 1.2rem; text-align: center; color: #445; }
+.state { border-radius: 14px; border: 1px solid #dde6f4; padding: 1.2rem; text-align: center; color: #334155; background: #fff; }
 .state.error { border-color: #fecaca; color: #b91c1c; }
-button { margin-top: 0.5rem; border: none; border-radius: 10px; background: #2f62ff; color: #fff; padding: 0.45rem 0.8rem; cursor: pointer; }
+button { margin-top: 0.5rem; border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.45rem 0.8rem; cursor: pointer; }
 </style>
