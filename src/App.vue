@@ -5,7 +5,7 @@
       <router-view />
     </main>
     <footer class="footer">
-      <p>© 2026 Vibe Hackathon Platform · Build fast, rank smart.</p>
+      <p>© 2026 Vibe Hackathon Platform · Discover, build, and win together.</p>
     </footer>
   </div>
 </template>
