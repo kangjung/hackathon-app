@@ -4,7 +4,7 @@
       <router-link to="/" class="logo">🚀 Vibe Hackathon</router-link>
       <div class="nav-links">
         <router-link to="/hackathons">해커톤</router-link>
-        <router-link to="/camp">팀 찾기</router-link>
+        <router-link to="/teams">팀 찾기</router-link>
         <router-link to="/rankings">랭킹</router-link>
         <router-link to="/me">내 정보</router-link>
         <router-link v-if="!authStore.isLoggedIn" to="/auth">로그인 / 회원가입</router-link>

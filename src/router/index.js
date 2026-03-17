@@ -15,7 +15,7 @@ const routes = [
   { path: '/rankings', component: Leaderboard },
   { path: '/teams', component: Teams },
   { path: '/teams/:teamCode', component: Teams, props: true },
-  { path: '/camp', component: Teams },
+  { path: '/camp', redirect: (to) => ({ path: '/teams', query: to.query }) },
   { path: '/auth', component: Auth },
   { path: '/me', component: MyProfile }
 ]
