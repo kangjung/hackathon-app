@@ -21,9 +21,22 @@
         <article>
           <h3>참가 중인 팀</h3>
           <ul v-if="myTeams.length">
-            <li v-for="team in myTeams" :key="team.code">{{ team.name }} ({{ team.code }})</li>
+            <li v-for="team in myTeams" :key="team.code">
+              <router-link :to="`/teams/${team.code}`">{{ team.name }} ({{ team.code }})</router-link>
+            </li>
           </ul>
-          <p v-else>아직 내가 만든 팀이 없습니다.</p>
+          <p v-else>아직 참가/운영 중인 팀이 없습니다.</p>
+        </article>
+
+        <article>
+          <h3>내 가입 신청 현황</h3>
+          <ul v-if="myJoinRequests.length">
+            <li v-for="request in myJoinRequests" :key="request.id">
+              <router-link :to="`/teams/${request.teamCode}`">{{ request.teamName }}</router-link>
+              · {{ request.role || '포지션 미선택' }} · {{ request.statusLabel }}
+            </li>
+          </ul>
+          <p v-else>보낸 가입 신청이 없습니다.</p>
         </article>
 
         <article>
@@ -64,13 +77,37 @@ onMounted(() => {
 })
 
 const myTeams = computed(() => {
-  const nickname = authStore.currentUser?.nickname
-  if (!nickname) return []
+  const userId = authStore.currentUser?.id
+  if (!userId) return []
 
   return hackathonStore.teams.filter((team) => {
-    const owner = team.ownerNickname || ''
-    return owner === nickname
+    const members = Array.isArray(team.members) ? team.members : []
+    return team.ownerId === userId || members.includes(userId)
   })
+})
+
+const myJoinRequests = computed(() => {
+  const userId = authStore.currentUser?.id
+  if (!userId) return []
+
+  const statusMap = {
+    pending: '검토 대기',
+    accepted: '승인',
+    rejected: '거절'
+  }
+
+  return hackathonStore.teams
+    .flatMap((team) =>
+      (team.joinRequests || [])
+        .filter((request) => request.userId === userId)
+        .map((request) => ({
+          id: request.id,
+          teamCode: team.code,
+          teamName: team.name,
+          role: request.role,
+          statusLabel: statusMap[request.status] || request.status
+        }))
+    )
 })
 
 const myHackathons = computed(() => {

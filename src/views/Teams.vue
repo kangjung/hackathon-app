@@ -1,7 +1,7 @@
 <template>
   <section class="teams">
     <div class="head">
-      <h1>팀 모집 (camp)</h1>
+      <h1>팀 모집</h1>
       <button @click="showForm = !showForm">팀 모집글 생성</button>
     </div>
 
@@ -180,6 +180,7 @@
           </div>
           <p class="meta" v-if="team.hackathonSlug"><strong>해커톤</strong><span>{{ team.hackathonSlug }}</span></p>
           <div class="card-actions">
+            <router-link class="detail-link" :to="`/teams/${team.code}`">상세 보기</router-link>
             <button v-if="!canManageTeam(team)" type="button" class="apply-btn" @click="submitJoinRequest(team)">가입 신청</button>
             <button
               v-if="canManageTeam(team)"
@@ -394,6 +395,7 @@ watch(
     }
     if (!team || canManageTeam(team)) return
     applyRole.value = ''
+    applyMessage.value = ''
   },
   { immediate: true }
 )
@@ -505,6 +507,7 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .position-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .position-chip { font-size: 0.78rem; padding: 0.18rem 0.5rem; border-radius: 999px; background: #e0e7ff; color: #312e81; font-weight: 700; }
 .contact-link { display: inline-block; color: #4338ca; font-weight: 700; text-decoration: none; }
+.detail-link { display: inline-block; background: #e0e7ff; color: #312e81; border-radius: 10px; padding: 0.45rem 0.7rem; text-decoration: none; font-weight: 700; }
 .card-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
 .apply-btn { background: #2563eb; }
 .toggle-btn { background: #0f766e; }
