@@ -18,6 +18,42 @@
       <div class="quick-actions">
         <router-link to="/auth" class="action action--primary">내 역할 선택하기</router-link>
         <router-link to="/hackathons" class="action action--ghost">진행중 해커톤 확인</router-link>
+        <button type="button" class="action action--soft" @click="isGuideModalOpen = true">
+          가이드 모달 보기
+        </button>
+      </div>
+
+      <section class="role-actions" aria-label="역할별 바로가기 버튼 3개">
+        <router-link
+          v-for="button in roleButtons"
+          :key="button.label"
+          :to="button.to"
+          class="role-action"
+        >
+          <span>{{ button.label }}</span>
+          <small>{{ button.helper }}</small>
+        </router-link>
+      </section>
+
+      <div
+        v-if="isGuideModalOpen"
+        class="guide-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="메인 화면 이용 가이드"
+      >
+        <article class="guide-modal">
+          <header>
+            <p>빠른 이용 가이드</p>
+            <h2>3개 버튼 흐름부터 확인하세요</h2>
+          </header>
+          <ol>
+            <li>내 역할과 가까운 버튼을 먼저 선택해 바로 시작합니다.</li>
+            <li>카드에서 단계별 CTA를 눌러 다음 화면으로 이동합니다.</li>
+            <li>마지막으로 랭킹/내 프로필에서 진행 상태를 점검합니다.</li>
+          </ol>
+          <button type="button" class="guide-close" @click="isGuideModalOpen = false">닫기</button>
+        </article>
       </div>
 
       <section class="journeys" aria-label="역할별 사용자 여정">
@@ -66,12 +102,31 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useHackathonStore } from '../stores/hackathon'
 
 const hackathonStore = useHackathonStore()
 const { hackathons, teams, leaderboards, submissions } = storeToRefs(hackathonStore)
+const isGuideModalOpen = ref(false)
+
+const roleButtons = [
+  {
+    label: '참가자로 시작',
+    helper: '탐색 → 팀합류 → 랭킹 확인',
+    to: '/auth?role=participant'
+  },
+  {
+    label: '팀리더로 시작',
+    helper: '팀개설 → 멤버모집 → 제출 관리',
+    to: '/auth?role=leader'
+  },
+  {
+    label: '운영자로 시작',
+    helper: '현황점검 → 운영관리 → 결과발표',
+    to: '/auth?role=operator'
+  }
+]
 
 const roleJourneys = [
   {
@@ -348,6 +403,92 @@ h1 {
   border: 1px solid #d5ddf3;
 }
 
+.action--soft {
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  background: rgba(238, 242, 255, 0.95);
+  cursor: pointer;
+}
+
+.role-actions {
+  margin-top: 0.95rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.role-action {
+  border: 1px solid #dbe4ff;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  text-decoration: none;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.25rem;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+}
+
+.role-action span {
+  color: #1e293b;
+  font-weight: 800;
+}
+
+.role-action small {
+  color: #475569;
+  font-size: 0.76rem;
+}
+
+.guide-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 1rem;
+}
+
+.guide-modal {
+  width: min(460px, 100%);
+  border-radius: 18px;
+  border: 1px solid #dbe4ff;
+  background: #fff;
+  padding: 1rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+}
+
+.guide-modal header p {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: #4f46e5;
+  font-weight: 800;
+}
+
+.guide-modal header h2 {
+  margin: 0.35rem 0 0;
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.guide-modal ol {
+  margin: 0.85rem 0;
+  padding-left: 1.1rem;
+  color: #334155;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.guide-close {
+  border: none;
+  border-radius: 10px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
 .journeys {
   margin-top: 1.2rem;
   display: grid;
@@ -456,6 +597,10 @@ h1 {
 }
 
 @media (max-width: 1080px) {
+  .role-actions {
+    grid-template-columns: 1fr;
+  }
+
   .journeys {
     grid-template-columns: 1fr;
   }
