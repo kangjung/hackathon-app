@@ -179,9 +179,39 @@
             <span v-else>-</span>
           </div>
           <p class="meta" v-if="team.hackathonSlug"><strong>해커톤</strong><span>{{ team.hackathonSlug }}</span></p>
-          <div class="card-actions">
-            <router-link class="detail-link" :to="`/teams/${team.code}`">상세 보기</router-link>
-            <button v-if="!canManageTeam(team)" type="button" class="apply-btn" @click="submitJoinRequest(team)">가입 신청</button>
+        <div class="card-actions">
+          <template v-if="!canManageTeam(team)">
+            <select
+              v-model="getCardApplyDraft(team.code).role"
+              class="inline-apply-role"
+              :disabled="!getOpenPositions(team).length"
+            >
+              <option disabled value="">지원 포지션 선택</option>
+              <option
+                v-for="position in getOpenPositions(team)"
+                :key="`${team.code}-${position.role}`"
+                :value="position.role"
+              >
+                {{ position.role }} ({{ position.remaining }}명 남음)
+              </option>
+            </select>
+            <input
+              v-model="getCardApplyDraft(team.code).message"
+              class="inline-apply-message"
+              :disabled="!getOpenPositions(team).length"
+              placeholder="한마디 (선택)"
+            />
+          </template>
+          <router-link class="detail-link" :to="`/teams/${team.code}`">상세 보기</router-link>
+            <button
+              v-if="!canManageTeam(team)"
+              type="button"
+              class="apply-btn"
+              :disabled="!getOpenPositions(team).length"
+              @click="submitJoinRequest(team, getCardApplyDraft(team.code))"
+            >
+              가입 신청
+            </button>
             <button
               v-if="canManageTeam(team)"
               type="button"
@@ -214,6 +244,7 @@ const showForm = ref(false)
 const positionOptions = POSITION_OPTIONS
 const applyMessage = ref('')
 const applyRole = ref('')
+const cardApplyDrafts = ref({})
 const teamFilters = ref({ search: '', status: 'all' })
 
 const defaultPosition = () => ({ role: '', customRole: '', count: 1 })
@@ -326,22 +357,38 @@ const getOpenPositions = (team) =>
 const pendingRequests = (team) =>
   (team.joinRequests || []).filter((request) => request.status === 'pending')
 
-const submitJoinRequest = (team) => {
+const getCardApplyDraft = (teamCode) => {
+  const safeTeamCode = String(teamCode || '').trim()
+  if (!safeTeamCode) return { role: '', message: '' }
+
+  if (!cardApplyDrafts.value[safeTeamCode]) {
+    cardApplyDrafts.value[safeTeamCode] = { role: '', message: '' }
+  }
+  return cardApplyDrafts.value[safeTeamCode]
+}
+
+const submitJoinRequest = (team, form = {}) => {
   if (!authStore.isLoggedIn) {
     alert('가입 신청은 로그인 후 가능합니다.')
     return
   }
+
+  const selectedRole = String(form.role ?? applyRole.value).trim()
+  const selectedMessage = String(form.message ?? applyMessage.value).trim()
 
   try {
     store.applyToTeam({
       teamCode: team.code,
       userId: authStore.currentUser?.id,
       nickname: authStore.currentUser?.nickname,
-      message: applyMessage.value,
-      role: applyRole.value
+      message: selectedMessage,
+      role: selectedRole
     })
     applyMessage.value = ''
     applyRole.value = ''
+    if (team?.code && cardApplyDrafts.value[team.code]) {
+      cardApplyDrafts.value[team.code] = { role: '', message: '' }
+    }
     alert('가입 신청이 접수되었습니다. 팀장의 확인을 기다려주세요.')
   } catch (error) {
     alert(error instanceof Error ? error.message : '가입 신청 중 오류가 발생했습니다.')
@@ -509,6 +556,8 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .contact-link { display: inline-block; color: #4338ca; font-weight: 700; text-decoration: none; }
 .detail-link { display: inline-block; background: #e0e7ff; color: #312e81; border-radius: 10px; padding: 0.45rem 0.7rem; text-decoration: none; font-weight: 700; }
 .card-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
+.inline-apply-role { min-width: 170px; }
+.inline-apply-message { min-width: 160px; }
 .apply-btn { background: #2563eb; }
 .toggle-btn { background: #0f766e; }
 .apply-box, .requests-box, .edit-box { margin-top: 0.9rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
