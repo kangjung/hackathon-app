@@ -10,6 +10,7 @@
     </div>
     <p class="result-meta">
       총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
+      <span class="favorite-meta">· 찜 {{ store.favoriteHackathonSlugs.length }}개</span>
     </p>
 
     <StatusState
@@ -60,5 +61,6 @@ onMounted(() => {
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem; }
 .result-meta { margin: -0.4rem 0 1rem; color: #475569; }
 .result-meta strong { color: #1e293b; }
+.favorite-meta { color: #7c3aed; font-weight: 600; margin-left: 0.3rem; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 </style>
