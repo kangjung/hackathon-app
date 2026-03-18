@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 const STORAGE_KEY = 'vibe-hackathon-data-v2'
+const FAVORITES_STORAGE_KEY = 'vibe-hackathon-favorites-v1'
 
 const statusLabelMap = {
   ongoing: '진행중',
@@ -229,7 +230,14 @@ export const useHackathonStore = defineStore('hackathon', () => {
   const teams = ref([])
   const submissions = ref([])
 
-  const filters = ref({ status: 'all', search: '', tag: 'all' })
+  const filters = ref({
+    status: 'all',
+    search: '',
+    tag: 'all',
+    favoritesOnly: false,
+    sortBy: 'recommended'
+  })
+  const favoriteHackathonSlugs = ref([])
   const isLoading = ref(false)
   const error = ref('')
   const hasLoaded = ref(false)
@@ -262,6 +270,24 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
   }
 
+  const hydrateFavorites = () => {
+    const raw = localStorage.getItem(FAVORITES_STORAGE_KEY)
+    if (!raw) return
+
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        favoriteHackathonSlugs.value = parsed.map((slug) => String(slug).trim()).filter(Boolean)
+      }
+    } catch (err) {
+      console.warn('찜 데이터 파싱 실패, 기본값으로 진행합니다:', err)
+    }
+  }
+
+  const persistFavorites = () => {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteHackathonSlugs.value))
+  }
+
   const loadData = async ({ force = false } = {}) => {
     if (hasLoaded.value && !force) return
     isLoading.value = true
@@ -281,6 +307,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
       teams.value = normalizeTeams(toArray(teamRaw))
 
       hydrateStorage()
+      hydrateFavorites()
       hasLoaded.value = true
     } catch (err) {
       error.value = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
@@ -290,8 +317,32 @@ export const useHackathonStore = defineStore('hackathon', () => {
     }
   }
 
+  const parseDateToTimestamp = (value) => {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? Number.POSITIVE_INFINITY : date.getTime()
+  }
+
+  const sortHackathons = (items, sortBy) => {
+    if (sortBy === 'participants') {
+      return [...items].sort((a, b) => b.participants - a.participants)
+    }
+    if (sortBy === 'deadline') {
+      return [...items].sort((a, b) => parseDateToTimestamp(a.endDate) - parseDateToTimestamp(b.endDate))
+    }
+    if (sortBy === 'startDate') {
+      return [...items].sort((a, b) => parseDateToTimestamp(a.startDate) - parseDateToTimestamp(b.startDate))
+    }
+    return [...items].sort((a, b) => {
+      const favoriteGap = Number(favoriteHackathonSlugs.value.includes(b.slug)) - Number(favoriteHackathonSlugs.value.includes(a.slug))
+      if (favoriteGap !== 0) return favoriteGap
+      if (a.status === b.status) return b.participants - a.participants
+      const statusWeight = { ongoing: 3, upcoming: 2, ended: 1, closed: 1 }
+      return (statusWeight[b.status] || 0) - (statusWeight[a.status] || 0)
+    })
+  }
+
   const filteredHackathons = computed(() => {
-    let result = hackathons.value
+    let result = [...hackathons.value]
     if (filters.value.status !== 'all') {
       result = result.filter((h) => h.status === filters.value.status)
     }
@@ -303,8 +354,23 @@ export const useHackathonStore = defineStore('hackathon', () => {
     if (filters.value.tag && filters.value.tag !== 'all') {
       result = result.filter((h) => (h.tags || []).includes(filters.value.tag))
     }
-    return result
+    if (filters.value.favoritesOnly) {
+      result = result.filter((h) => favoriteHackathonSlugs.value.includes(h.slug))
+    }
+    return sortHackathons(result, filters.value.sortBy)
   })
+
+  const isFavoriteHackathon = (slug) => favoriteHackathonSlugs.value.includes(slug)
+
+  const toggleFavoriteHackathon = (slug) => {
+    if (!slug) return
+    if (isFavoriteHackathon(slug)) {
+      favoriteHackathonSlugs.value = favoriteHackathonSlugs.value.filter((item) => item !== slug)
+    } else {
+      favoriteHackathonSlugs.value = [...favoriteHackathonSlugs.value, slug]
+    }
+    persistFavorites()
+  }
 
   const getHackathonDetail = (slug) => hackathonDetail.value[slug]
   const getTeamByCode = (code) =>
@@ -652,10 +718,13 @@ export const useHackathonStore = defineStore('hackathon', () => {
     teams,
     submissions,
     filters,
+    favoriteHackathonSlugs,
     isLoading,
     error,
     hasLoaded,
     filteredHackathons,
+    isFavoriteHackathon,
+    toggleFavoriteHackathon,
     loadData,
     getHackathonDetail,
     getTeamByCode,
