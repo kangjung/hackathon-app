@@ -15,6 +15,11 @@
       <option value="ended">종료</option>
       <option value="closed">종료(구버전)</option>
     </select>
+    <label class="sr-only" for="hackathon-tag">태그 필터</label>
+    <select id="hackathon-tag" :value="filters.tag" @change="update('tag', $event.target.value)">
+      <option value="all">전체 태그</option>
+      <option v-for="tag in tagOptions" :key="tag" :value="tag">{{ tag }}</option>
+    </select>
     <button
       v-if="hasActiveFilters"
       type="button"
@@ -30,13 +35,20 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  filters: { type: Object, required: true }
+  filters: { type: Object, required: true },
+  tagOptions: {
+    type: Array,
+    default: () => []
+  }
 })
 const emit = defineEmits(['update:filters'])
-const defaultFilters = { status: 'all', search: '' }
+const defaultFilters = { status: 'all', search: '', tag: 'all' }
 
 const hasActiveFilters = computed(
-  () => props.filters.status !== defaultFilters.status || Boolean(props.filters.search?.trim())
+  () =>
+    props.filters.status !== defaultFilters.status ||
+    props.filters.tag !== defaultFilters.tag ||
+    Boolean(props.filters.search?.trim())
 )
 
 const update = (key, value) => {

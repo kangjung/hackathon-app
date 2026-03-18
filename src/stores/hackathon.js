@@ -73,8 +73,20 @@ const normalizeHackathon = (item, index) => {
     status,
     statusLabel: item.statusLabel || statusLabelMap[status] || status,
     tags,
-    startDate: item.startDate || item.start_at || item.start || '-',
-    endDate: item.endDate || item.end_at || item.end || '-',
+    startDate:
+      item.startDate ||
+      item.start_at ||
+      item.start ||
+      item.period?.startAt ||
+      item.period?.submissionStartAt ||
+      '-',
+    endDate:
+      item.endDate ||
+      item.end_at ||
+      item.end ||
+      item.period?.endAt ||
+      item.period?.submissionDeadlineAt ||
+      '-',
     participants: Number(item.participants || item.participantCount || item.teamCount || 0)
   }
 }
@@ -217,7 +229,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
   const teams = ref([])
   const submissions = ref([])
 
-  const filters = ref({ status: 'all', search: '' })
+  const filters = ref({ status: 'all', search: '', tag: 'all' })
   const isLoading = ref(false)
   const error = ref('')
   const hasLoaded = ref(false)
@@ -287,6 +299,9 @@ export const useHackathonStore = defineStore('hackathon', () => {
       result = result.filter((h) =>
         h.title.toLowerCase().includes(filters.value.search.toLowerCase())
       )
+    }
+    if (filters.value.tag && filters.value.tag !== 'all') {
+      result = result.filter((h) => (h.tags || []).includes(filters.value.tag))
     }
     return result
   })

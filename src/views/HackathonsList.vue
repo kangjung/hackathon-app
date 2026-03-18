@@ -2,7 +2,11 @@
   <div class="hackathons-list">
     <div class="page-header">
       <h1>해커톤 목록</h1>
-      <FilterMenu :filters="store.filters" @update:filters="store.filters = $event" />
+      <FilterMenu
+        :filters="store.filters"
+        :tag-options="availableTags"
+        @update:filters="store.filters = $event"
+      />
     </div>
     <p class="result-meta">
       총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
@@ -33,13 +37,18 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useHackathonStore } from '../stores/hackathon'
 import FilterMenu from '../components/FilterMenu.vue'
 import HackathonCard from '../components/HackathonCard.vue'
 import StatusState from '../components/StatusState.vue'
 
 const store = useHackathonStore()
+const availableTags = computed(() =>
+  [...new Set(store.hackathons.flatMap((hackathon) => hackathon.tags || []))].sort((a, b) =>
+    a.localeCompare(b, 'ko')
+  )
+)
 
 onMounted(() => {
   store.loadData()
