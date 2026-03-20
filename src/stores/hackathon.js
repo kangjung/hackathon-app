@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { useAuthStore } from './auth'
 
 const STORAGE_KEY = 'vibe-hackathon-data-v2'
 const FAVORITES_STORAGE_KEY = 'vibe-hackathon-favorites-v1'
@@ -224,6 +225,7 @@ const fetchJsonWithFallback = async (paths) => {
 }
 
 export const useHackathonStore = defineStore('hackathon', () => {
+  const authStore = useAuthStore()
   const hackathons = ref([])
   const hackathonDetail = ref({})
   const leaderboards = ref([])
@@ -288,6 +290,22 @@ export const useHackathonStore = defineStore('hackathon', () => {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteHackathonSlugs.value))
   }
 
+  const userFavoriteHackathonSlugs = computed(() => {
+    if (!authStore.isLoggedIn || authStore.currentRole !== 'user') {
+      return []
+    }
+
+    return Array.isArray(authStore.currentUser?.bookmarkedHackathons)
+      ? authStore.currentUser.bookmarkedHackathons
+      : []
+  })
+
+  const activeFavoriteHackathonSlugs = computed(() =>
+    authStore.isLoggedIn && authStore.currentRole === 'user'
+      ? userFavoriteHackathonSlugs.value
+      : favoriteHackathonSlugs.value
+  )
+
   const loadData = async ({ force = false } = {}) => {
     if (hasLoaded.value && !force) return
     isLoading.value = true
@@ -333,7 +351,9 @@ export const useHackathonStore = defineStore('hackathon', () => {
       return [...items].sort((a, b) => parseDateToTimestamp(a.startDate) - parseDateToTimestamp(b.startDate))
     }
     return [...items].sort((a, b) => {
-      const favoriteGap = Number(favoriteHackathonSlugs.value.includes(b.slug)) - Number(favoriteHackathonSlugs.value.includes(a.slug))
+      const favoriteGap =
+        Number(activeFavoriteHackathonSlugs.value.includes(b.slug)) -
+        Number(activeFavoriteHackathonSlugs.value.includes(a.slug))
       if (favoriteGap !== 0) return favoriteGap
       if (a.status === b.status) return b.participants - a.participants
       const statusWeight = { ongoing: 3, upcoming: 2, ended: 1, closed: 1 }
@@ -355,15 +375,20 @@ export const useHackathonStore = defineStore('hackathon', () => {
       result = result.filter((h) => (h.tags || []).includes(filters.value.tag))
     }
     if (filters.value.favoritesOnly) {
-      result = result.filter((h) => favoriteHackathonSlugs.value.includes(h.slug))
+      result = result.filter((h) => activeFavoriteHackathonSlugs.value.includes(h.slug))
     }
     return sortHackathons(result, filters.value.sortBy)
   })
 
-  const isFavoriteHackathon = (slug) => favoriteHackathonSlugs.value.includes(slug)
+  const isFavoriteHackathon = (slug) => activeFavoriteHackathonSlugs.value.includes(slug)
 
   const toggleFavoriteHackathon = (slug) => {
     if (!slug) return
+    if (authStore.isLoggedIn && authStore.currentRole === 'user') {
+      authStore.toggleHackathonBookmark(slug)
+      return
+    }
+
     if (isFavoriteHackathon(slug)) {
       favoriteHackathonSlugs.value = favoriteHackathonSlugs.value.filter((item) => item !== slug)
     } else {
@@ -718,7 +743,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     teams,
     submissions,
     filters,
-    favoriteHackathonSlugs,
+    favoriteHackathonSlugs: activeFavoriteHackathonSlugs,
     isLoading,
     error,
     hasLoaded,
