@@ -1,5 +1,8 @@
 <template>
   <section class="detail" v-if="hackathon">
+    <p v-if="!authStore.isLoggedIn" class="auth-guide">
+      현재 게스트로 둘러보는 중입니다. <router-link to="/auth">로그인</router-link>하면 북마크, 팀 제출이 가능합니다.
+    </p>
     <header class="detail-header">
       <div>
         <h1>{{ detailTitle }}</h1>
@@ -9,6 +12,7 @@
         class="bookmark-btn"
         :class="{ active: isBookmarked }"
         :disabled="!authStore.isLoggedIn"
+        :title="!authStore.isLoggedIn ? '로그인 후 북마크할 수 있습니다.' : ''"
         @click="toggleBookmark"
       >
         {{ isBookmarked ? '★ 북마크됨' : '☆ 북마크' }}
@@ -73,7 +77,7 @@
         </ul>
         <p v-if="!authStore.isLoggedIn" class="submit-hint">제출은 로그인 후 가능합니다.</p>
         <p v-else-if="!myTeams.length" class="submit-hint">내가 만든 이 해커톤 팀이 있어야 제출할 수 있습니다.</p>
-        <button :disabled="!canSubmit" @click="openSubmit">제출하기</button>
+        <button :disabled="!canSubmit" :title="submitButtonTitle" @click="openSubmit">제출하기</button>
       </article>
 
       <article>
@@ -132,6 +136,11 @@ const myTeams = computed(() => {
   return store.getMyTeamsByHackathon({ hackathonSlug: slug.value, userId: authStore.currentUser.id })
 })
 const canSubmit = computed(() => authStore.isLoggedIn && myTeams.value.length > 0)
+const submitButtonTitle = computed(() => {
+  if (!authStore.isLoggedIn) return '로그인 후 제출할 수 있습니다.'
+  if (!myTeams.value.length) return '내가 만든 팀이 있어야 제출할 수 있습니다.'
+  return ''
+})
 const isBookmarked = computed(() => authStore.isHackathonBookmarked(slug.value))
 
 const detailTitle = computed(() => detail.value.title || hackathon.value?.title || '')
@@ -197,6 +206,7 @@ const onSubmit = ({ teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
 
 <style scoped>
 .detail { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+.auth-guide { margin: 0 0 0.8rem; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 0.6rem 0.75rem; }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
 article { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1rem; }
