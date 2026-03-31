@@ -1,8 +1,17 @@
 <template>
   <section class="teams">
+    <p class="auth-guide" :class="authStore.isLoggedIn ? 'ok' : 'warn'">
+      {{ authStore.isLoggedIn ? '로그인 상태입니다. 팀 생성/가입 신청 기능을 사용할 수 있습니다.' : '팀 생성/가입 신청은 로그인 후 가능합니다. 지금은 조회만 가능합니다.' }}
+    </p>
     <div class="head">
       <h1>팀 모집</h1>
-      <button @click="showForm = !showForm">팀 모집글 생성</button>
+      <button
+        :disabled="!authStore.isLoggedIn"
+        :title="!authStore.isLoggedIn ? '로그인 후 팀 모집글을 만들 수 있습니다.' : ''"
+        @click="showForm = !showForm"
+      >
+        팀 모집글 생성
+      </button>
     </div>
 
     <div class="team-filters">
@@ -108,7 +117,15 @@
             </option>
           </select>
           <textarea v-model="applyMessage" rows="3" placeholder="팀장에게 남길 한마디 (선택)"></textarea>
-          <button type="button" @click="submitJoinRequest(selectedTeam)">가입 신청</button>
+          <button
+            type="button"
+            :disabled="!authStore.isLoggedIn"
+            :title="!authStore.isLoggedIn ? '로그인 후 가입 신청할 수 있습니다.' : ''"
+            @click="submitJoinRequest(selectedTeam)"
+          >
+            가입 신청
+          </button>
+          <p v-if="!authStore.isLoggedIn" class="hint">로그인해야 가입 신청을 보낼 수 있습니다.</p>
           <p class="hint">기존 문의 링크는 그대로 유지됩니다.</p>
         </div>
 
@@ -185,6 +202,7 @@
               v-model="getCardApplyDraft(team.code).role"
               class="inline-apply-role"
               :disabled="!getOpenPositions(team).length"
+              :title="!authStore.isLoggedIn ? '로그인 후 지원할 수 있습니다.' : ''"
             >
               <option disabled value="">지원 포지션 선택</option>
               <option
@@ -199,6 +217,7 @@
               v-model="getCardApplyDraft(team.code).message"
               class="inline-apply-message"
               :disabled="!getOpenPositions(team).length"
+              :title="!authStore.isLoggedIn ? '로그인 후 메시지를 남길 수 있습니다.' : ''"
               placeholder="한마디 (선택)"
             />
           </template>
@@ -207,7 +226,8 @@
               v-if="!canManageTeam(team)"
               type="button"
               class="apply-btn"
-              :disabled="!getOpenPositions(team).length"
+              :disabled="!authStore.isLoggedIn || !getOpenPositions(team).length"
+              :title="!authStore.isLoggedIn ? '로그인 후 가입 신청할 수 있습니다.' : ''"
               @click="submitJoinRequest(team, getCardApplyDraft(team.code))"
             >
               가입 신청
@@ -523,8 +543,12 @@ const createTeam = () => {
 
 <style scoped>
 .teams { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
+.auth-guide { margin: 0 0 0.7rem; border-radius: 10px; padding: 0.6rem 0.75rem; font-weight: 600; }
+.auth-guide.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.auth-guide.ok { background: #ecfdf5; border: 1px solid #86efac; color: #166534; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25); }
+button:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; }
 .team-filters { margin: 0.3rem 0 0.2rem; display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .team-filters input,
 .team-filters select { border: 1px solid #d0d8e6; border-radius: 10px; padding: 0.62rem; min-width: 200px; background: #fff; color: #0f172a; }

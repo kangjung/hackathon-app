@@ -12,6 +12,9 @@
       총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
       <span class="favorite-meta">· 찜 {{ store.favoriteHackathonSlugs.length }}개</span>
     </p>
+    <p class="auth-meta">
+      {{ authStore.isLoggedIn ? '로그인됨: 찜/북마크가 계정에 저장됩니다.' : '게스트 상태: 찜은 이 브라우저에만 임시 저장됩니다.' }}
+    </p>
 
     <StatusState
       v-if="store.isLoading"
@@ -40,11 +43,13 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useHackathonStore } from '../stores/hackathon'
+import { useAuthStore } from '../stores/auth'
 import FilterMenu from '../components/FilterMenu.vue'
 import HackathonCard from '../components/HackathonCard.vue'
 import StatusState from '../components/StatusState.vue'
 
 const store = useHackathonStore()
+const authStore = useAuthStore()
 const availableTags = computed(() =>
   [...new Set(store.hackathons.flatMap((hackathon) => hackathon.tags || []))].sort((a, b) =>
     a.localeCompare(b, 'ko')
@@ -60,6 +65,7 @@ onMounted(() => {
 .hackathons-list { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 1rem; }
 .result-meta { margin: -0.4rem 0 1rem; color: #475569; }
+.auth-meta { margin: -0.6rem 0 0.9rem; color: #64748b; font-size: 0.9rem; }
 .result-meta strong { color: #1e293b; }
 .favorite-meta { color: #7c3aed; font-weight: 600; margin-left: 0.3rem; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }

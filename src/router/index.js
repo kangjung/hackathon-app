@@ -6,6 +6,7 @@ import Leaderboard from '../views/Leaderboard.vue'
 import Teams from '../views/Teams.vue'
 import Auth from '../views/Auth.vue'
 import MyProfile from '../views/MyProfile.vue'
+import { useAuthStore } from '../stores/auth'
 
 const routes = [
   { path: '/', component: Home },
@@ -17,10 +18,27 @@ const routes = [
   { path: '/teams/:teamCode', component: Teams, props: true },
   { path: '/camp', redirect: (to) => ({ path: '/teams', query: to.query }) },
   { path: '/auth', component: Auth },
-  { path: '/me', component: MyProfile }
+  { path: '/me', component: MyProfile, meta: { requiresLogin: true } }
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes
 })
+
+router.beforeEach((to) => {
+  if (!to.meta.requiresLogin) return true
+
+  const authStore = useAuthStore()
+  if (authStore.isLoggedIn) return true
+
+  return {
+    path: '/auth',
+    query: {
+      redirect: to.fullPath,
+      reason: 'login_required'
+    }
+  }
+})
+
+export default router
