@@ -114,21 +114,23 @@
         <p class="meta"><strong>해커톤</strong><span>{{ selectedTeam.hackathonSlug || '없음' }}</span></p>
 
         <div class="apply-box" v-if="!canManageTeam(selectedTeam)">
-          <select v-model="applyRole">
-            <option disabled value="">지원 포지션 선택</option>
-            <option v-for="position in getOpenPositions(selectedTeam)" :key="position.role" :value="position.role">
-              {{ position.role }} ({{ position.remaining }}명 남음)
-            </option>
-          </select>
-          <textarea v-model="applyMessage" rows="3" placeholder="팀장에게 남길 한마디 (선택)"></textarea>
-          <button
-            type="button"
-            :disabled="!authStore.isLoggedIn"
-            :title="!authStore.isLoggedIn ? '로그인 후 가입 신청할 수 있습니다.' : ''"
-            @click="submitJoinRequest(selectedTeam)"
-          >
-            가입 신청
-          </button>
+          <div class="apply-controls">
+            <select v-model="applyRole">
+              <option disabled value="">지원 포지션 선택</option>
+              <option v-for="position in getOpenPositions(selectedTeam)" :key="position.role" :value="position.role">
+                {{ position.role }} ({{ position.remaining }}명 남음)
+              </option>
+            </select>
+            <textarea v-model="applyMessage" rows="3" placeholder="팀장에게 남길 한마디 (선택)"></textarea>
+            <button
+              type="button"
+              :disabled="!authStore.isLoggedIn"
+              :title="!authStore.isLoggedIn ? '로그인 후 가입 신청할 수 있습니다.' : ''"
+              @click="submitJoinRequest(selectedTeam)"
+            >
+              가입 신청
+            </button>
+          </div>
           <p v-if="!authStore.isLoggedIn" class="hint">로그인해야 가입 신청을 보낼 수 있습니다.</p>
           <p class="hint">기존 문의 링크는 그대로 유지됩니다.</p>
         </div>
@@ -604,6 +606,9 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .apply-btn { background: #2563eb; }
 .toggle-btn { background: #0f766e; }
 .apply-box, .requests-box, .edit-box { margin-top: 0.9rem; padding: 0.75rem; border-radius: 12px; border: 1px solid #c7d2fe; background: #fff; }
+.apply-controls { display: grid; gap: 0.55rem; grid-template-columns: minmax(170px, 210px) minmax(0, 1fr) auto; align-items: end; }
+.apply-controls textarea { min-height: 72px; resize: vertical; }
+.apply-controls button { white-space: nowrap; height: fit-content; }
 .edit-grid { display: grid; gap: 0.45rem; margin-bottom: 0.55rem; }
 .requests-box h3 { margin: 0; }
 .hint { margin: 0.4rem 0 0; color: #475569; font-size: 0.85rem; }
@@ -614,4 +619,8 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .request-actions { display: flex; gap: 0.35rem; }
 .request-actions .approve { background: #16a34a; }
 .request-actions .reject { background: #dc2626; }
+@media (max-width: 760px) {
+  .apply-controls { grid-template-columns: 1fr; align-items: stretch; }
+  .apply-controls button { justify-self: stretch; }
+}
 </style>
