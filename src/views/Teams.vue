@@ -3,6 +3,10 @@
     <p class="auth-guide" :class="authStore.isLoggedIn ? 'ok' : 'warn'">
       {{ authStore.isLoggedIn ? '로그인 상태입니다. 팀 생성/가입 신청 기능을 사용할 수 있습니다.' : '팀 생성/가입 신청은 로그인 후 가능합니다. 지금은 조회만 가능합니다.' }}
     </p>
+    <p v-if="ownerPendingRequestCount > 0" class="owner-alert">
+      내가 운영하는 팀에 확인하지 않은 가입 신청이 {{ ownerPendingRequestCount }}건 있습니다.
+      <router-link to="/notifications">알림에서 바로 확인</router-link>
+    </p>
     <div class="head">
       <h1>팀 모집</h1>
       <button
@@ -322,6 +326,18 @@ const hasActiveTeamFilters = computed(
   () => teamFilters.value.status !== 'all' || Boolean(teamFilters.value.search)
 )
 
+const ownerPendingRequestCount = computed(() => {
+  const userId = authStore.currentUser?.id
+  if (!userId) return 0
+
+  return store.teams
+    .filter((team) => team.ownerId === userId)
+    .reduce(
+      (total, team) => total + (team.joinRequests || []).filter((request) => request.status === 'pending').length,
+      0
+    )
+})
+
 const resetTeamFilters = () => {
   teamFilters.value = { search: '', status: 'all' }
 }
@@ -546,6 +562,8 @@ const createTeam = () => {
 .auth-guide { margin: 0 0 0.7rem; border-radius: 10px; padding: 0.6rem 0.75rem; font-weight: 600; }
 .auth-guide.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
 .auth-guide.ok { background: #ecfdf5; border: 1px solid #86efac; color: #166534; }
+.owner-alert { margin: 0 0 0.7rem; border-radius: 10px; padding: 0.55rem 0.75rem; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+.owner-alert a { margin-left: 0.25rem; color: #1d4ed8; font-weight: 700; }
 .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 button { border: none; border-radius: 10px; background: #4f46e5; color: #fff; padding: 0.6rem 0.95rem; cursor: pointer; font-weight: 700; box-shadow: 0 8px 16px rgba(79, 70, 229, 0.25); }
 button:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; }
