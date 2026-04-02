@@ -43,11 +43,21 @@
       <article>
         <h3>일정</h3>
         <p v-if="timezoneText">시간대: {{ timezoneText }}</p>
+        <p v-if="nextMilestoneText" class="next-milestone">다음 마일스톤: {{ nextMilestoneText }}</p>
         <ul v-if="scheduleMilestones.length">
           <li v-for="(item, index) in scheduleMilestones" :key="`milestone-${index}`">
             {{ item.name }} — {{ formatDate(item.at) }}
           </li>
         </ul>
+        <button
+          type="button"
+          class="calendar-btn"
+          :disabled="!scheduleMilestones.length"
+          :title="scheduleMilestones.length ? '' : '일정 정보가 있을 때만 내려받을 수 있습니다.'"
+          @click="downloadScheduleCalendar"
+        >
+          일정 캘린더(.ics) 받기
+        </button>
       </article>
 
       <article>
@@ -171,6 +181,17 @@ const evalLimitText = computed(() => {
 
 const timezoneText = computed(() => sections.value.schedule?.timezone || '')
 const scheduleMilestones = computed(() => sections.value.schedule?.milestones || [])
+const nextMilestoneText = computed(() => {
+  const now = Date.now()
+  const next = scheduleMilestones.value
+    .filter((item) => item?.at)
+    .map((item) => ({ ...item, timestamp: new Date(item.at).getTime() }))
+    .filter((item) => !Number.isNaN(item.timestamp) && item.timestamp >= now)
+    .sort((a, b) => a.timestamp - b.timestamp)[0]
+
+  if (!next) return ''
+  return `${next.name} (${formatDate(next.at)})`
+})
 const prizeItems = computed(() => sections.value.prize?.items || [])
 const submitTypes = computed(() => sections.value.submit?.allowedArtifactTypes || [])
 const submitGuideList = computed(() => sections.value.submit?.guide || [])
@@ -195,6 +216,74 @@ const openSubmit = () => {
   showSubmit.value = true
 }
 
+const toIcsDate = (date) => {
+  const yyyy = date.getUTCFullYear()
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(date.getUTCDate()).padStart(2, '0')
+  const hh = String(date.getUTCHours()).padStart(2, '0')
+  const min = String(date.getUTCMinutes()).padStart(2, '0')
+  const ss = String(date.getUTCSeconds()).padStart(2, '0')
+  return `${yyyy}${mm}${dd}T${hh}${min}${ss}Z`
+}
+
+const escapeIcsText = (text) =>
+  String(text || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n')
+
+const buildCalendarContent = () => {
+  const baseTitle = detailTitle.value || hackathon.value?.title || slug.value
+  const nowStamp = toIcsDate(new Date())
+  const events = scheduleMilestones.value
+    .filter((item) => item?.name && item?.at)
+    .map((item, index) => {
+      const start = new Date(item.at)
+      if (Number.isNaN(start.getTime())) return null
+      const end = new Date(start.getTime() + 60 * 60 * 1000)
+      const uid = `${slug.value}-${index}-${start.getTime()}@vibe-hackathon`
+
+      return [
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTAMP:${nowStamp}`,
+        `DTSTART:${toIcsDate(start)}`,
+        `DTEND:${toIcsDate(end)}`,
+        `SUMMARY:${escapeIcsText(`${baseTitle} · ${item.name}`)}`,
+        `DESCRIPTION:${escapeIcsText(baseTitle)}`,
+        'END:VEVENT'
+      ].join('\n')
+    })
+    .filter(Boolean)
+
+  if (!events.length) return ''
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//VibeHackathon//Schedule//KR',
+    'CALSCALE:GREGORIAN',
+    ...events,
+    'END:VCALENDAR'
+  ].join('\n')
+}
+
+const downloadScheduleCalendar = () => {
+  const calendarContent = buildCalendarContent()
+  if (!calendarContent) return
+
+  const blob = new Blob([calendarContent], { type: 'text/calendar;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `${slug.value || 'hackathon'}-schedule.ics`
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(url)
+}
+
 const onSubmit = ({ teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
   if (!authStore.isLoggedIn) return
   const allowed = myTeams.value.some((team) => team.code === teamCode)
@@ -217,4 +306,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 a { color: #4338ca; }
 .bookmark-btn { white-space: nowrap; background: #e2e8f0; color: #1e293b; }
 .bookmark-btn.active { background: #f59e0b; color: #fff; }
+.next-milestone { margin: 0.3rem 0 0.5rem; color: #1d4ed8; font-weight: 600; }
+.calendar-btn { margin-top: 0.8rem; width: 100%; background: #1d4ed8; }
 </style>
