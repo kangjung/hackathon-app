@@ -4,6 +4,7 @@ import { useAuthStore } from './auth'
 
 const STORAGE_KEY = 'vibe-hackathon-data-v2'
 const FAVORITES_STORAGE_KEY = 'vibe-hackathon-favorites-v1'
+const NOTIFICATION_READS_STORAGE_KEY = 'vibe-notification-reads-v1'
 
 const statusLabelMap = {
   ongoing: '진행중',
@@ -240,6 +241,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     sortBy: 'recommended'
   })
   const favoriteHackathonSlugs = ref([])
+  const notificationReads = ref({})
   const isLoading = ref(false)
   const error = ref('')
   const hasLoaded = ref(false)
@@ -290,6 +292,23 @@ export const useHackathonStore = defineStore('hackathon', () => {
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteHackathonSlugs.value))
   }
 
+  const hydrateNotificationReads = () => {
+    const raw = localStorage.getItem(NOTIFICATION_READS_STORAGE_KEY)
+    if (!raw) return
+
+    try {
+      const parsed = JSON.parse(raw)
+      notificationReads.value = parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (err) {
+      console.warn('알림 읽음 상태 파싱 실패, 기본값으로 진행합니다:', err)
+      notificationReads.value = {}
+    }
+  }
+
+  const persistNotificationReads = () => {
+    localStorage.setItem(NOTIFICATION_READS_STORAGE_KEY, JSON.stringify(notificationReads.value))
+  }
+
   const userFavoriteHackathonSlugs = computed(() => {
     if (!authStore.isLoggedIn || authStore.currentRole !== 'user') {
       return []
@@ -326,6 +345,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
 
       hydrateStorage()
       hydrateFavorites()
+      hydrateNotificationReads()
       hasLoaded.value = true
     } catch (err) {
       error.value = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
@@ -736,6 +756,115 @@ export const useHackathonStore = defineStore('hackathon', () => {
       .sort((a, b) => b.points - a.points)
   }
 
+  const buildNotificationsByUser = (userId) => {
+    const safeUserId = String(userId || '').trim()
+    if (!safeUserId) return []
+
+    const safeTeams = normalizeTeams(ensureArray(teams.value))
+    const safeSubmissions = ensureArray(submissions.value)
+    const notifications = []
+
+    safeTeams.forEach((team) => {
+      const isOwner = team.ownerId === safeUserId
+      const members = Array.isArray(team.members) ? team.members : []
+      const isParticipant = isOwner || members.includes(safeUserId)
+
+      if (isOwner) {
+        team.joinRequests
+          .filter((request) => request.status === 'pending')
+          .forEach((request) => {
+            notifications.push({
+              id: `team-request-pending-${team.code}-${request.id}`,
+              type: 'team_request_pending',
+              title: '새 팀 가입 신청',
+              message: `${team.name} 팀에 ${request.nickname}님이 ${request.role || '포지션 미선택'}으로 가입을 신청했어요.`,
+              createdAt: request.createdAt,
+              link: `/teams/${team.code}`
+            })
+          })
+      }
+
+      team.joinRequests
+        .filter((request) => request.userId === safeUserId && request.status !== 'pending')
+        .forEach((request) => {
+          const isAccepted = request.status === 'accepted'
+          notifications.push({
+            id: `team-request-reviewed-${team.code}-${request.id}-${request.status}`,
+            type: 'team_request_reviewed',
+            title: isAccepted ? '가입 신청 승인됨' : '가입 신청 거절됨',
+            message: `${team.name} 팀 신청이 ${isAccepted ? '승인' : '거절'}되었습니다.`,
+            createdAt: request.reviewedAt || request.createdAt,
+            link: `/teams/${team.code}`
+          })
+        })
+
+      if (isParticipant && team.hackathonSlug) {
+        safeSubmissions
+          .filter(
+            (submission) =>
+              submission.teamCode === team.code && submission.hackathonSlug === team.hackathonSlug
+          )
+          .forEach((submission) => {
+            const hackathonName =
+              hackathons.value.find((item) => item.slug === team.hackathonSlug)?.title ||
+              team.hackathonSlug
+            notifications.push({
+              id: `hackathon-submission-${submission.id}`,
+              type: 'hackathon_submission',
+              title: '참가 해커톤 제출 완료',
+              message: `${hackathonName}에서 ${team.name} 팀이 결과물을 제출했어요.`,
+              createdAt: submission.submittedAt,
+              link: `/hackathons/${team.hackathonSlug}`
+            })
+          })
+      }
+    })
+
+    return notifications
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((notification) => ({
+        ...notification,
+        isRead: Boolean(notificationReads.value[safeUserId]?.[notification.id])
+      }))
+  }
+
+  const getNotificationsByUser = (userId) => buildNotificationsByUser(userId)
+
+  const getUnreadNotificationCount = (userId) =>
+    buildNotificationsByUser(userId).filter((notification) => !notification.isRead).length
+
+  const markNotificationRead = ({ userId, notificationId }) => {
+    const safeUserId = String(userId || '').trim()
+    const safeNotificationId = String(notificationId || '').trim()
+    if (!safeUserId || !safeNotificationId) return
+
+    const userReads = notificationReads.value[safeUserId] || {}
+    notificationReads.value = {
+      ...notificationReads.value,
+      [safeUserId]: {
+        ...userReads,
+        [safeNotificationId]: new Date().toISOString()
+      }
+    }
+    persistNotificationReads()
+  }
+
+  const markAllNotificationsRead = (userId) => {
+    const safeUserId = String(userId || '').trim()
+    if (!safeUserId) return
+
+    const nextReads = { ...(notificationReads.value[safeUserId] || {}) }
+    buildNotificationsByUser(safeUserId).forEach((notification) => {
+      nextReads[notification.id] = new Date().toISOString()
+    })
+
+    notificationReads.value = {
+      ...notificationReads.value,
+      [safeUserId]: nextReads
+    }
+    persistNotificationReads()
+  }
+
   return {
     hackathons,
     hackathonDetail,
@@ -767,6 +896,10 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getAcceptedRoleCount,
     isRoleClosed,
     submitProject,
-    getSubmissionByTeam
+    getSubmissionByTeam,
+    getNotificationsByUser,
+    getUnreadNotificationCount,
+    markNotificationRead,
+    markAllNotificationsRead
   }
 })

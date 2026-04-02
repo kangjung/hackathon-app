@@ -15,6 +15,7 @@
         <p><strong>주 포지션</strong> {{ authStore.currentUser?.mainPosition }}</p>
         <p><strong>누적 포인트</strong> {{ myPoints }}점</p>
         <p><strong>글로벌 랭킹</strong> {{ myRankText }}</p>
+        <p><strong>읽지 않은 알림</strong> {{ unreadNotificationCount }}건 · <router-link to="/notifications">알림 보러가기</router-link></p>
       </div>
 
       <div class="grid">
@@ -136,6 +137,12 @@ const myRankText = computed(() => {
   const ranking = hackathonStore.getGlobalRankings('all')
   const rankIndex = ranking.findIndex((row) => row.nickname === nickname)
   return rankIndex >= 0 ? `${rankIndex + 1}위` : '랭킹 없음'
+})
+
+const unreadNotificationCount = computed(() => {
+  const userId = authStore.currentUser?.id
+  if (!userId) return 0
+  return hackathonStore.getUnreadNotificationCount(userId)
 })
 </script>
 

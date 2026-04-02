@@ -6,6 +6,7 @@ import Leaderboard from '../views/Leaderboard.vue'
 import Teams from '../views/Teams.vue'
 import Auth from '../views/Auth.vue'
 import MyProfile from '../views/MyProfile.vue'
+import Notifications from '../views/Notifications.vue'
 import { useAuthStore } from '../stores/auth'
 
 const routes = [
@@ -18,7 +19,8 @@ const routes = [
   { path: '/teams/:teamCode', component: Teams, props: true },
   { path: '/camp', redirect: (to) => ({ path: '/teams', query: to.query }) },
   { path: '/auth', component: Auth },
-  { path: '/me', component: MyProfile, meta: { requiresLogin: true } }
+  { path: '/me', component: MyProfile, meta: { requiresLogin: true } },
+  { path: '/notifications', component: Notifications, meta: { requiresLogin: true } }
 ]
 
 const router = createRouter({

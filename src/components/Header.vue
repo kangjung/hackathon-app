@@ -7,6 +7,10 @@
         <router-link to="/teams">팀 찾기</router-link>
         <router-link to="/rankings">랭킹</router-link>
         <router-link to="/me">내 정보</router-link>
+        <router-link v-if="authStore.isLoggedIn" to="/notifications" class="notification-link">
+          알림
+          <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+        </router-link>
         <router-link v-if="!authStore.isLoggedIn" to="/auth" class="auth-link">로그인 / 회원가입</router-link>
         <template v-else>
           <span class="session-badge" :class="authStore.isAdmin ? 'admin' : 'user'">
@@ -20,11 +24,23 @@
 </template>
 
 <script setup>
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useHackathonStore } from '../stores/hackathon'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const hackathonStore = useHackathonStore()
+
+onMounted(() => {
+  hackathonStore.loadData()
+})
+
+const unreadCount = computed(() => {
+  if (!authStore.currentUser?.id) return 0
+  return hackathonStore.getUnreadNotificationCount(authStore.currentUser.id)
+})
 
 const onLogout = () => {
   authStore.logout()
@@ -50,5 +66,20 @@ const onLogout = () => {
 .session-badge { font-size: 0.82rem; font-weight: 700; border-radius: 999px; padding: 0.4rem 0.7rem; }
 .session-badge.user { background: #dcfce7; color: #166534; }
 .session-badge.admin { background: #fee2e2; color: #991b1b; }
+.notification-link { position: relative; padding-right: 1.4rem !important; }
+.notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 18px;
+  text-align: center;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 700;
+}
 @media (max-width: 768px) { .nav { flex-direction: column; gap: 0.8rem; } }
 </style>
