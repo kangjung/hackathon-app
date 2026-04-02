@@ -11,6 +11,7 @@
     <p class="result-meta">
       총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
       <span class="favorite-meta">· 찜 {{ store.favoriteHackathonSlugs.length }}개</span>
+      <span v-if="activeFilterCount" class="filter-meta">· 필터 {{ activeFilterCount }}개 적용중</span>
     </p>
     <p class="auth-meta">
       {{ authStore.isLoggedIn ? '로그인됨: 찜/북마크가 계정에 저장됩니다.' : '게스트 상태: 찜은 이 브라우저에만 임시 저장됩니다.' }}
@@ -36,7 +37,10 @@
       />
     </div>
 
-    <StatusState v-else type="empty" message="해당 조건에 맞는 해커톤이 없습니다. 😔" />
+    <div v-else class="empty-helper">
+      <StatusState type="empty" message="해당 조건에 맞는 해커톤이 없습니다. 😔" />
+      <button type="button" class="clear-btn" @click="resetFilters">필터 모두 해제하고 다시 보기</button>
+    </div>
   </div>
 </template>
 
@@ -56,6 +60,28 @@ const availableTags = computed(() =>
   )
 )
 
+const defaultFilters = {
+  status: 'all',
+  search: '',
+  tag: 'all',
+  favoritesOnly: false,
+  sortBy: 'recommended'
+}
+
+const activeFilterCount = computed(() => {
+  let count = 0
+  if (store.filters.status !== defaultFilters.status) count += 1
+  if (store.filters.search?.trim()) count += 1
+  if (store.filters.tag !== defaultFilters.tag) count += 1
+  if (store.filters.favoritesOnly !== defaultFilters.favoritesOnly) count += 1
+  if (store.filters.sortBy !== defaultFilters.sortBy) count += 1
+  return count
+})
+
+const resetFilters = () => {
+  store.filters = { ...defaultFilters }
+}
+
 onMounted(() => {
   store.loadData()
 })
@@ -68,5 +94,16 @@ onMounted(() => {
 .auth-meta { margin: -0.6rem 0 0.9rem; color: #64748b; font-size: 0.9rem; }
 .result-meta strong { color: #1e293b; }
 .favorite-meta { color: #7c3aed; font-weight: 600; margin-left: 0.3rem; }
+.filter-meta { color: #2563eb; margin-left: 0.3rem; font-weight: 600; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.empty-helper { display: grid; gap: 0.7rem; justify-items: start; }
+.clear-btn {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+  padding: 0.55rem 0.9rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
 </style>
