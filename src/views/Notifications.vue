@@ -41,6 +41,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { formatDateTimeKorean } from '../utils/dateTime'
 import { useHackathonStore } from '../stores/hackathon'
 import StatusState from '../components/StatusState.vue'
 
@@ -77,11 +78,7 @@ const markAllAsRead = () => {
   hackathonStore.markAllNotificationsRead(userId.value)
 }
 
-const formatDate = (value) => {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '-'
-  return date.toLocaleString('ko-KR', { hour12: false })
-}
+const formatDate = (value) => formatDateTimeKorean(value)
 </script>
 
 <style scoped>

@@ -114,6 +114,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
 import { useAuthStore } from '../stores/auth'
+import { formatDateTimeKorean } from '../utils/dateTime'
 import SubmitModal from '../components/SubmitModal.vue'
 import StatusState from '../components/StatusState.vue'
 
@@ -181,9 +182,7 @@ const teamsListUrl = computed(
 const formatMoney = (amount) => Number(amount || 0).toLocaleString('ko-KR')
 const formatDate = (value) => {
   if (!value) return '-'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString('ko-KR', { hour12: false })
+  return formatDateTimeKorean(value, value)
 }
 
 const toggleBookmark = () => {

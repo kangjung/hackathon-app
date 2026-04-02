@@ -257,6 +257,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
+import { formatDateTimeKorean } from '../utils/dateTime'
 import { useAuthStore } from '../stores/auth'
 import StatusState from '../components/StatusState.vue'
 import { POSITION_OPTIONS } from '../constants/positions'
@@ -368,7 +369,7 @@ const getRecruitStatusText = (team) => {
     return team.recruitDeadline ? '마감(기간 종료)' : '마감'
   }
   if (!team.recruitDeadline) return '모집중'
-  return `모집중 · ${new Date(team.recruitDeadline).toLocaleString('ko-KR', { hour12: false })} 마감`
+  return `모집중 · ${formatDateTimeKorean(team.recruitDeadline)} 마감`
 }
 
 const getRecruitProgressText = (team) => {
@@ -380,7 +381,7 @@ const getRecruitProgressText = (team) => {
   return `${current}명 참여중`
 }
 
-const formatDate = (value) => new Date(value).toLocaleString('ko-KR', { hour12: false })
+const formatDate = (value) => formatDateTimeKorean(value)
 
 const getOpenPositions = (team) =>
   (team.positions || [])
