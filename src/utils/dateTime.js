@@ -9,7 +9,24 @@ export const formatDateTimeKorean = (value, fallback = '-') => {
   const day = String(date.getDate()).padStart(2, '0')
   const hour = String(date.getHours()).padStart(2, '0')
   const minute = String(date.getMinutes()).padStart(2, '0')
-  const second = String(date.getSeconds()).padStart(2, '0')
 
-  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  return `${year}.${month}.${day} ${hour}:${minute}`
+}
+
+const isValidDateValue = (value) => {
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime())
+}
+
+export const formatHackathonPeriod = (startValue, endValue) => {
+  const hasStart = isValidDateValue(startValue)
+  const hasEnd = isValidDateValue(endValue)
+
+  if (hasStart && hasEnd) {
+    return `${formatDateTimeKorean(startValue)} ~ ${formatDateTimeKorean(endValue)}`
+  }
+
+  if (hasEnd) return `${formatDateTimeKorean(endValue)} 마감`
+  if (hasStart) return `${formatDateTimeKorean(startValue)} 시작`
+  return '일정 추후 공지'
 }
