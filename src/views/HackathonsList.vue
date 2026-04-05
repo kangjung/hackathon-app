@@ -9,8 +9,15 @@
       />
     </div>
     <p class="result-meta">
-      총 {{ store.stats.totalHackathons }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
-      <span class="favorite-meta">· 찜 {{ store.favoriteHackathonSlugs.length }}개</span>
+      <template v-if="store.hasLoaded">
+        총 {{ store.stats.totalHackathons }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
+        <button type="button" class="favorite-meta favorite-btn" @click="enableFavoritesFilter">
+          · 찜 {{ store.favoriteHackathonSlugs.length }}개
+        </button>
+      </template>
+      <template v-else>
+        데이터를 불러오는 중...
+      </template>
       <span v-if="activeFilterCount" class="filter-meta">· 필터 {{ activeFilterCount }}개 적용중</span>
     </p>
     <p class="auth-meta">
@@ -82,6 +89,10 @@ const resetFilters = () => {
   store.filters = { ...defaultFilters }
 }
 
+const enableFavoritesFilter = () => {
+  store.filters = { ...store.filters, favoritesOnly: true }
+}
+
 onMounted(() => {
   store.loadData()
 })
@@ -94,6 +105,14 @@ onMounted(() => {
 .auth-meta { margin: -0.6rem 0 0.9rem; color: #64748b; font-size: 0.9rem; }
 .result-meta strong { color: #1e293b; }
 .favorite-meta { color: #7c3aed; font-weight: 600; margin-left: 0.3rem; }
+.favorite-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+.favorite-btn:hover { text-decoration: underline; }
 .filter-meta { color: #2563eb; margin-left: 0.3rem; font-weight: 600; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
 .empty-helper { display: grid; gap: 0.7rem; justify-items: start; }

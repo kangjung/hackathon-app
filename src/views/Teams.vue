@@ -10,7 +10,6 @@
     <div class="head">
       <h1>팀 모집</h1>
       <button
-        :disabled="!authStore.isLoggedIn"
         :title="!authStore.isLoggedIn ? '로그인 후 팀 모집글을 만들 수 있습니다.' : ''"
         @click="toggleCreateForm"
       >
@@ -38,7 +37,9 @@
         필터 초기화
       </button>
     </div>
-    <p class="filter-result">총 {{ store.stats.totalTeams }}팀 중 {{ filteredTeams.length }}팀 표시</p>
+    <p class="filter-result">
+      총 {{ store.stats.totalTeams }}팀 중 {{ filteredTeams.length }}팀 표시 · 모집중 {{ store.stats.recruitingTeams }}팀
+    </p>
 
     <StatusState
       v-if="store.isLoading"
@@ -246,7 +247,10 @@
             >
               {{ store.isRecruitmentClosed(team) ? '재오픈' : '모집 마감' }}
             </button>
-            <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">가입 문의 ↗</a>
+            <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">
+              가입 문의 (오픈채팅/폼)
+              <span class="external-icon" aria-hidden="true">↗</span>
+            </a>
           </div>
         </article>
       </div>
@@ -346,7 +350,10 @@ const resetTeamFilters = () => {
 }
 
 const toggleCreateForm = () => {
-  if (!authStore.isLoggedIn) return
+  if (!authStore.isLoggedIn) {
+    alert('로그인 후 팀 모집글을 생성할 수 있습니다.')
+    return
+  }
   showForm.value = !showForm.value
 }
 
@@ -616,6 +623,7 @@ input, select, textarea { border: 1px solid #d0d8e6; border-radius: 10px; paddin
 .position-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .position-chip { font-size: 0.78rem; padding: 0.18rem 0.5rem; border-radius: 999px; background: #e0e7ff; color: #312e81; font-weight: 700; }
 .contact-link { display: inline-block; color: #4338ca; font-weight: 700; text-decoration: none; }
+.external-icon { margin-left: 0.25rem; }
 .detail-link { display: inline-block; background: #e0e7ff; color: #312e81; border-radius: 10px; padding: 0.45rem 0.7rem; text-decoration: none; font-weight: 700; }
 .card-actions { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.45rem; align-items: center; }
 .inline-apply-role { min-width: 170px; }
