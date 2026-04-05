@@ -11,6 +11,9 @@
         <button :class="{ active: accountType === 'user' }" @click="switchAccountType('user')">일반 이용자</button>
         <button :class="{ active: accountType === 'admin' }" @click="switchAccountType('admin')">운영자</button>
       </div>
+      <p v-if="accountType === 'admin'" class="admin-notice">
+        운영자 탭은 별도 로그인 폼으로 동작합니다. 대회/팀 데이터 관리 권한이 있는 계정만 접속 가능합니다.
+      </p>
 
       <div class="tab-row" v-if="accountType === 'user'">
         <button :class="{ active: mode === 'login' }" @click="mode = 'login'">로그인</button>
@@ -125,6 +128,7 @@ const onSignup = () => {
 .auth { max-width: 560px; margin: 2rem auto; padding: 0 1rem; }
 .auth-card { border: 1px solid #dbe4f6; background: #fff; border-radius: 16px; padding: 1.2rem; }
 .notice { margin-top: 0.75rem; margin-bottom: 0.9rem; background: #eef2ff; border: 1px solid #c7d2fe; color: #312e81; border-radius: 10px; padding: 0.55rem 0.65rem; font-size: 0.92rem; }
+.admin-notice { margin: -0.3rem 0 0.75rem; color: #334155; font-size: 0.88rem; }
 .tab-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .role-tab-row { margin-top: 0.9rem; }
 .tab-row button { border: 1px solid #dbe4f6; background: #f8faff; color: #334155; }

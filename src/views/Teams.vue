@@ -12,7 +12,7 @@
       <button
         :disabled="!authStore.isLoggedIn"
         :title="!authStore.isLoggedIn ? '로그인 후 팀 모집글을 만들 수 있습니다.' : ''"
-        @click="showForm = !showForm"
+        @click="toggleCreateForm"
       >
         팀 모집글 생성
       </button>
@@ -109,7 +109,7 @@
               {{ position.role }} · {{ position.count }}명 {{ store.isRoleClosed(selectedTeam, position.role) ? '(마감)' : '' }}
             </span>
           </div>
-          <span v-else>-</span>
+          <span v-else>{{ getEmptyPositionLabel(selectedTeam) }}</span>
         </div>
         <p class="meta"><strong>해커톤</strong><span>{{ selectedTeam.hackathonSlug || '없음' }}</span></p>
 
@@ -199,7 +199,7 @@
                 {{ position.role }} · {{ position.count }}명 {{ store.isRoleClosed(team, position.role) ? '(마감)' : '' }}
               </span>
             </div>
-            <span v-else>-</span>
+            <span v-else>{{ getEmptyPositionLabel(team) }}</span>
           </div>
           <p class="meta" v-if="team.hackathonSlug"><strong>해커톤</strong><span>{{ team.hackathonSlug }}</span></p>
         <div class="card-actions">
@@ -345,6 +345,11 @@ const resetTeamFilters = () => {
   teamFilters.value = { search: '', status: 'all' }
 }
 
+const toggleCreateForm = () => {
+  if (!authStore.isLoggedIn) return
+  showForm.value = !showForm.value
+}
+
 const selectedTeam = computed(() => {
   const teamCode = route.params.teamCode
   if (!teamCode) return null
@@ -382,6 +387,8 @@ const getRecruitProgressText = (team) => {
   }
   return `${current}명 참여중`
 }
+
+const getEmptyPositionLabel = (team) => (store.isRecruitmentClosed(team) ? '마감' : '모집 포지션 미정')
 
 const formatDate = (value) => formatDateTimeKorean(value)
 

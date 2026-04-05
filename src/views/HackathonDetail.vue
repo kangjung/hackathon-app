@@ -3,13 +3,17 @@
     <p v-if="!authStore.isLoggedIn" class="auth-guide">
       현재 게스트로 둘러보는 중입니다. <router-link to="/auth">로그인</router-link>하면 북마크, 팀 제출이 가능합니다.
     </p>
-    <header class="detail-header">
-      <div>
-        <h1>{{ detailTitle }}</h1>
-        <p>{{ overviewSummary || hackathon.summary }}</p>
+    <section class="hero-banner">
+      <p class="hero-status">{{ hackathon.statusLabel }} 해커톤</p>
+      <h1>{{ detailTitle }}</h1>
+      <p>{{ overviewSummary || hackathon.summary }}</p>
+      <div class="hero-meta">
+        <span>{{ hackathon.startDate }} ~ {{ hackathon.endDate }}</span>
+        <span v-if="timezoneText">{{ timezoneText }}</span>
+        <span>{{ teams.length }}개 팀 참여/모집</span>
       </div>
       <button
-        class="bookmark-btn"
+        class="bookmark-btn hero-bookmark"
         :class="{ active: isBookmarked }"
         :disabled="!authStore.isLoggedIn"
         :title="!authStore.isLoggedIn ? '로그인 후 북마크할 수 있습니다.' : ''"
@@ -17,6 +21,12 @@
       >
         {{ isBookmarked ? '★ 북마크됨' : '☆ 북마크' }}
       </button>
+    </section>
+    <header class="detail-header">
+      <div>
+        <h2>핵심 정보</h2>
+        <p>개요, 평가 방식, 일정, 상금을 빠르게 확인하고 팀 탐색/제출까지 이어서 진행할 수 있습니다.</p>
+      </div>
     </header>
 
     <div class="tabs">
@@ -196,9 +206,7 @@ const prizeItems = computed(() => sections.value.prize?.items || [])
 const submitTypes = computed(() => sections.value.submit?.allowedArtifactTypes || [])
 const submitGuideList = computed(() => sections.value.submit?.guide || [])
 const leaderboardNote = computed(() => sections.value.leaderboard?.note || '')
-const teamsListUrl = computed(
-  () => sections.value.teams?.listUrl || `/camp?hackathon=${hackathon.value?.slug || ''}`
-)
+const teamsListUrl = computed(() => `/teams?hackathon=${hackathon.value?.slug || ''}`)
 
 const formatMoney = (amount) => Number(amount || 0).toLocaleString('ko-KR')
 const formatDate = (value) => {
@@ -295,7 +303,41 @@ const onSubmit = ({ teamCode, planningUrl, webUrl, pdfUrl, notes }) => {
 <style scoped>
 .detail { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
 .auth-guide { margin: 0 0 0.8rem; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 0.6rem 0.75rem; }
-.detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.hero-banner {
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid #bfdbfe;
+  padding: 1.25rem;
+  color: #e0e7ff;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(147, 197, 253, 0.35), transparent 40%),
+    linear-gradient(135deg, #1e3a8a 0%, #312e81 45%, #0f172a 100%);
+  box-shadow: 0 20px 40px rgba(30, 58, 138, 0.32);
+}
+.hero-status {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(224, 231, 255, 0.16);
+  border: 1px solid rgba(224, 231, 255, 0.28);
+  border-radius: 999px;
+  padding: 0.24rem 0.62rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.hero-banner h1 { margin: 0.65rem 0 0.45rem; color: #fff; }
+.hero-banner p { margin: 0; max-width: 760px; color: #dbeafe; }
+.hero-meta { margin-top: 0.85rem; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.hero-meta span {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 0.24rem 0.58rem;
+  font-size: 0.8rem;
+}
+.hero-bookmark { margin-top: 0.85rem; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-top: 1rem; }
 .tabs { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.9rem; }
 article { background: #fff; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1rem; }
 ul { margin: 0.5rem 0 0; padding-left: 1rem; }
@@ -308,4 +350,7 @@ a { color: #4338ca; }
 .bookmark-btn.active { background: #f59e0b; color: #fff; }
 .next-milestone { margin: 0.3rem 0 0.5rem; color: #1d4ed8; font-weight: 600; }
 .calendar-btn { margin-top: 0.8rem; width: 100%; background: #1d4ed8; }
+@media (max-width: 860px) {
+  .detail-header { margin-top: 0.85rem; }
+}
 </style>
