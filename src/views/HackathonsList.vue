@@ -9,7 +9,7 @@
       />
     </div>
     <p class="result-meta">
-      총 {{ store.hackathons.length }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
+      총 {{ store.stats.totalHackathons }}개 중 <strong>{{ store.filteredHackathons.length }}개</strong> 표시
       <span class="favorite-meta">· 찜 {{ store.favoriteHackathonSlugs.length }}개</span>
       <span v-if="activeFilterCount" class="filter-meta">· 필터 {{ activeFilterCount }}개 적용중</span>
     </p>

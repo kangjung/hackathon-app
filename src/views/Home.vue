@@ -90,26 +90,15 @@
 
 <script setup>
 import { computed, onMounted } from 'vue'
-import { storeToRefs } from 'pinia'
 import { useHackathonStore } from '../stores/hackathon'
 import { formatHackathonPeriod } from '../utils/dateTime'
 
 const hackathonStore = useHackathonStore()
-const { hackathons, teams, leaderboards, submissions } = storeToRefs(hackathonStore)
+const liveEventsCount = computed(() => hackathonStore.stats.discoverableHackathons)
 
-const liveEventsCount = computed(() =>
-  hackathons.value.filter((hackathon) => ['ongoing', 'upcoming'].includes(hackathon.status)).length
-)
+const activeProjectsCount = computed(() => hackathonStore.stats.registeredProjects)
 
-const activeProjectsCount = computed(() => {
-  const submittedProjects = submissions.value.length
-  if (submittedProjects > 0) return submittedProjects
-  return leaderboards.value.length
-})
-
-const recruitingTeamsCount = computed(() =>
-  teams.value.filter((team) => !hackathonStore.isRecruitmentClosed(team)).length
-)
+const recruitingTeamsCount = computed(() => hackathonStore.stats.recruitingTeams)
 
 const todayRecruitOpeningsCount = computed(() => {
   const today = new Date()
@@ -118,7 +107,7 @@ const todayRecruitOpeningsCount = computed(() => {
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
 
-  return teams.value.filter((team) => {
+  return hackathonStore.teams.filter((team) => {
     if (hackathonStore.isRecruitmentClosed(team)) return false
     const openedAt = new Date(team.createdAt)
     if (Number.isNaN(openedAt.getTime())) return false
@@ -134,7 +123,7 @@ const todayRecruitStatusMessage = computed(() => {
 })
 
 const featuredHackathons = computed(() =>
-  hackathons.value
+  hackathonStore.hackathons
     .slice()
     .sort((a, b) => {
       const priority = { ongoing: 0, upcoming: 1, closed: 2, ended: 3 }

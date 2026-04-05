@@ -38,7 +38,7 @@
         필터 초기화
       </button>
     </div>
-    <p class="filter-result">총 {{ store.teams.length }}팀 중 {{ filteredTeams.length }}팀 표시</p>
+    <p class="filter-result">총 {{ store.stats.totalTeams }}팀 중 {{ filteredTeams.length }}팀 표시</p>
 
     <StatusState
       v-if="store.isLoading"

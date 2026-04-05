@@ -8,7 +8,7 @@
       <h1>{{ detailTitle }}</h1>
       <p>{{ overviewSummary || hackathon.summary }}</p>
       <div class="hero-meta">
-        <span>{{ hackathon.startDate }} ~ {{ hackathon.endDate }}</span>
+        <span>{{ formatHackathonPeriod(hackathon.startDate, hackathon.endDate) }}</span>
         <span v-if="timezoneText">{{ timezoneText }}</span>
         <span>{{ teams.length }}개 팀 참여/모집</span>
       </div>
@@ -134,7 +134,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useHackathonStore } from '../stores/hackathon'
 import { useAuthStore } from '../stores/auth'
-import { formatDateTimeKorean } from '../utils/dateTime'
+import { formatDateTimeKorean, formatHackathonPeriod } from '../utils/dateTime'
 import SubmitModal from '../components/SubmitModal.vue'
 import StatusState from '../components/StatusState.vue'
 
