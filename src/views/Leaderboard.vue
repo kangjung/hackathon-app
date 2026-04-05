@@ -14,11 +14,23 @@
         </select>
       </div>
 
-      <select v-else v-model="period">
-        <option value="all">전체</option>
-        <option value="7d">최근 7일</option>
-        <option value="30d">최근 30일</option>
-      </select>
+      <div class="controls" v-else>
+        <select v-model="selectedHackathonSlug">
+          <option value="all">전체 해커톤</option>
+          <option
+            v-for="hackathon in hackathonOptions"
+            :key="hackathon.slug"
+            :value="hackathon.slug"
+          >
+            {{ hackathon.title }}
+          </option>
+        </select>
+        <select v-model="period" :disabled="selectedHackathonSlug !== 'all'">
+          <option value="all">전체</option>
+          <option value="7d">최근 7일</option>
+          <option value="30d">최근 30일</option>
+        </select>
+      </div>
     </div>
 
     <StatusState
@@ -97,6 +109,7 @@ const authStore = useAuthStore()
 const period = ref('all')
 const teamKeyword = ref('')
 const sortMode = ref('score')
+const selectedHackathonSlug = ref('all')
 
 onMounted(() => {
   store.loadData()
@@ -105,6 +118,10 @@ onMounted(() => {
 const targetSlug = computed(() => route.params.slug)
 const subtitle = computed(() => {
   if (!targetSlug.value) {
+    if (selectedHackathonSlug.value !== 'all') {
+      const selected = store.hackathons.find((item) => item.slug === selectedHackathonSlug.value)
+      return `${selected?.title || '선택한 해커톤'} 참가 팀 랭킹입니다.`
+    }
     return '전체 해커톤 기록 기준 유저(팀) 랭킹입니다.'
   }
   if (authStore.isAdmin) {
@@ -113,8 +130,24 @@ const subtitle = computed(() => {
   return '참가 팀의 제출 현황과 점수를 확인할 수 있습니다.'
 })
 
+const hackathonOptions = computed(() =>
+  [...store.hackathons].sort((a, b) => a.title.localeCompare(b.title, 'ko'))
+)
+
 const rows = computed(() => {
   if (!targetSlug.value) {
+    if (selectedHackathonSlug.value !== 'all') {
+      const selectedRows = store.getLeaderboardByHackathon(selectedHackathonSlug.value)
+      let rank = 0
+      return selectedRows.map((entry) => {
+        if (!entry.pending) rank += 1
+        return {
+          ...entry,
+          rank: entry.pending ? '-' : rank,
+          nickname: entry.teamName || entry.teamCode
+        }
+      })
+    }
     return store.getGlobalRankings(period.value).map((entry, index) => ({ ...entry, rank: index + 1 }))
   }
 
