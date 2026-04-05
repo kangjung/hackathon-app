@@ -60,6 +60,20 @@ const toArray = (value) => {
 
 const ensureArray = (value) => (Array.isArray(value) ? value : toArray(value))
 
+const normalizeSupportMessages = (items) =>
+  ensureArray(items)
+    .map((entry) => ({
+      id: String(entry.id || `support-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`),
+      userId: String(entry.userId || '').trim(),
+      userNickname: String(entry.userNickname || entry.userId || '').trim(),
+      question: String(entry.question || '').trim(),
+      createdAt: entry.createdAt || new Date().toISOString(),
+      reply: String(entry.reply || '').trim(),
+      repliedAt: entry.repliedAt || null,
+      repliedBy: String(entry.repliedBy || '').trim()
+    }))
+    .filter((entry) => entry.userId && entry.question)
+
 const normalizeHackathon = (item, index) => {
   const slug = item.slug || item.code || item.id || `hackathon-${index + 1}`
   const status = item.status || item.state || item.progress || 'upcoming'
@@ -233,6 +247,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
   const leaderboards = ref([])
   const teams = ref([])
   const submissions = ref([])
+  const supportMessages = ref([])
 
   const filters = ref({
     status: 'all',
@@ -253,7 +268,8 @@ export const useHackathonStore = defineStore('hackathon', () => {
       JSON.stringify({
         leaderboards: leaderboards.value,
         teams: teams.value,
-        submissions: submissions.value
+        submissions: submissions.value,
+        supportMessages: supportMessages.value
       })
     )
   }
@@ -268,10 +284,12 @@ export const useHackathonStore = defineStore('hackathon', () => {
         leaderboards.value = normalizeLeaderboards(ensureArray(parsed.leaderboards || []))
         teams.value = normalizeTeams(ensureArray(parsed.teams || []))
         submissions.value = ensureArray(parsed.submissions || [])
+        supportMessages.value = normalizeSupportMessages(parsed.supportMessages || [])
       }
     } catch (err) {
       console.warn('로컬 스토리지 데이터 파싱 실패, 초기 데이터 사용:', err)
       submissions.value = []
+      supportMessages.value = []
     }
   }
 
@@ -775,12 +793,78 @@ export const useHackathonStore = defineStore('hackathon', () => {
       .sort((a, b) => b.points - a.points)
   }
 
+  const sendSupportMessage = ({ userId, userNickname, question }) => {
+    const safeUserId = String(userId || '').trim()
+    const safeQuestion = String(question || '').trim()
+    if (!safeUserId) {
+      throw new Error('로그인이 필요합니다.')
+    }
+    if (!safeQuestion) {
+      throw new Error('문의 내용을 입력해주세요.')
+    }
+
+    const safeMessages = normalizeSupportMessages(supportMessages.value)
+    safeMessages.push({
+      id: `support-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      userId: safeUserId,
+      userNickname: String(userNickname || safeUserId).trim(),
+      question: safeQuestion,
+      createdAt: new Date().toISOString(),
+      reply: '',
+      repliedAt: null,
+      repliedBy: ''
+    })
+    supportMessages.value = safeMessages
+    persistLocalData()
+  }
+
+  const replySupportMessage = ({ messageId, adminId, reply }) => {
+    const safeMessageId = String(messageId || '').trim()
+    const safeAdminId = String(adminId || '').trim()
+    const safeReply = String(reply || '').trim()
+    if (!safeMessageId) {
+      throw new Error('문의 정보를 찾을 수 없습니다.')
+    }
+    if (!safeReply) {
+      throw new Error('답변 내용을 입력해주세요.')
+    }
+    if (!safeAdminId) {
+      throw new Error('운영자 인증 정보가 필요합니다.')
+    }
+
+    const safeMessages = normalizeSupportMessages(supportMessages.value)
+    const target = safeMessages.find((entry) => entry.id === safeMessageId)
+    if (!target) {
+      throw new Error('문의 정보를 찾을 수 없습니다.')
+    }
+    target.reply = safeReply
+    target.repliedAt = new Date().toISOString()
+    target.repliedBy = safeAdminId
+
+    supportMessages.value = safeMessages
+    persistLocalData()
+  }
+
+  const getSupportMessagesByUser = (userId) => {
+    const safeUserId = String(userId || '').trim()
+    if (!safeUserId) return []
+    return normalizeSupportMessages(supportMessages.value)
+      .filter((entry) => entry.userId === safeUserId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }
+
+  const getPendingSupportMessages = () =>
+    normalizeSupportMessages(supportMessages.value)
+      .filter((entry) => !entry.reply)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
   const buildNotificationsByUser = (userId) => {
     const safeUserId = String(userId || '').trim()
     if (!safeUserId) return []
 
     const safeTeams = normalizeTeams(ensureArray(teams.value))
     const safeSubmissions = ensureArray(submissions.value)
+    const safeSupportMessages = normalizeSupportMessages(supportMessages.value)
     const notifications = []
 
     safeTeams.forEach((team) => {
@@ -839,6 +923,34 @@ export const useHackathonStore = defineStore('hackathon', () => {
       }
     })
 
+    if (safeUserId === 'admin') {
+      safeSupportMessages
+        .filter((entry) => !entry.reply)
+        .forEach((entry) => {
+          notifications.push({
+            id: `support-question-${entry.id}`,
+            type: 'support_question',
+            title: '새 사용자 문의',
+            message: `${entry.userNickname}(@${entry.userId})님의 문의가 도착했습니다.`,
+            createdAt: entry.createdAt,
+            link: '/notifications'
+          })
+        })
+    } else {
+      safeSupportMessages
+        .filter((entry) => entry.userId === safeUserId && entry.reply)
+        .forEach((entry) => {
+          notifications.push({
+            id: `support-reply-${entry.id}-${entry.repliedAt || ''}`,
+            type: 'support_reply',
+            title: '운영자 답변 도착',
+            message: `보낸 문의에 운영자 답변이 등록되었습니다.`,
+            createdAt: entry.repliedAt || entry.createdAt,
+            link: '/notifications'
+          })
+        })
+    }
+
     return notifications
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .map((notification) => ({
@@ -890,6 +1002,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     leaderboards,
     teams,
     submissions,
+    supportMessages,
     filters,
     favoriteHackathonSlugs: activeFavoriteHackathonSlugs,
     isLoading,
@@ -920,6 +1033,10 @@ export const useHackathonStore = defineStore('hackathon', () => {
     getNotificationsByUser,
     getUnreadNotificationCount,
     markNotificationRead,
-    markAllNotificationsRead
+    markAllNotificationsRead,
+    sendSupportMessage,
+    replySupportMessage,
+    getSupportMessagesByUser,
+    getPendingSupportMessages
   }
 })
