@@ -15,21 +15,30 @@
       </div>
 
       <div class="kpis" aria-label="서비스 핵심 지표">
-        <article>
+        <router-link class="kpi-link" to="/hackathons">
+          <article>
           <p>진행 중 · 예정 대회</p>
           <strong>{{ liveEventsCount }}</strong>
-        </article>
-        <article>
+          <small>바로 탐색하기 →</small>
+          </article>
+        </router-link>
+        <router-link class="kpi-link" to="/teams">
+          <article>
           <p>모집중 팀</p>
           <strong>{{ recruitingTeamsCount }}</strong>
-        </article>
-        <article>
+          <small>팀 찾으러 가기 →</small>
+          </article>
+        </router-link>
+        <router-link class="kpi-link" to="/rankings">
+          <article>
           <p>등록된 프로젝트</p>
           <strong>{{ activeProjectsCount }}</strong>
-        </article>
+          <small>랭킹으로 성과 확인 →</small>
+          </article>
+        </router-link>
         <article>
-          <p>오늘의 제출</p>
-          <strong>{{ todayUpdatesCount }}</strong>
+          <p>오늘 팀 모집 상태</p>
+          <strong>{{ todayRecruitStatusMessage }}</strong>
         </article>
       </div>
     </div>
@@ -43,7 +52,7 @@
         <article v-for="hackathon in featuredHackathons" :key="hackathon.slug" class="event-card">
           <div class="event-top">
             <span :class="['status', `status-${hackathon.status}`]">{{ hackathon.statusLabel }}</span>
-            <small>{{ hackathon.startDate }} ~ {{ hackathon.endDate }}</small>
+            <small>{{ formatHackathonPeriod(hackathon.startDate, hackathon.endDate) }}</small>
           </div>
           <h3>{{ hackathon.title }}</h3>
           <p>{{ hackathon.summary || '상세 페이지에서 주제, 트랙, 심사 기준을 확인해보세요.' }}</p>
@@ -83,6 +92,7 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useHackathonStore } from '../stores/hackathon'
+import { formatHackathonPeriod } from '../utils/dateTime'
 
 const hackathonStore = useHackathonStore()
 const { hackathons, teams, leaderboards, submissions } = storeToRefs(hackathonStore)
@@ -101,18 +111,26 @@ const recruitingTeamsCount = computed(() =>
   teams.value.filter((team) => !hackathonStore.isRecruitmentClosed(team)).length
 )
 
-const todayUpdatesCount = computed(() => {
+const todayRecruitOpeningsCount = computed(() => {
   const today = new Date()
   const isSameDay = (date) =>
     date.getFullYear() === today.getFullYear() &&
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
 
-  return submissions.value.filter((submission) => {
-    const submittedAt = new Date(submission.submittedAt)
-    if (Number.isNaN(submittedAt.getTime())) return false
-    return isSameDay(submittedAt)
+  return teams.value.filter((team) => {
+    if (hackathonStore.isRecruitmentClosed(team)) return false
+    const openedAt = new Date(team.createdAt)
+    if (Number.isNaN(openedAt.getTime())) return false
+    return isSameDay(openedAt)
   }).length
+})
+
+const todayRecruitStatusMessage = computed(() => {
+  if (todayRecruitOpeningsCount.value > 0) {
+    return `오늘 새 모집 ${todayRecruitOpeningsCount.value}건`
+  }
+  return '오늘 새로 열린 모집 없음'
 })
 
 const featuredHackathons = computed(() =>
@@ -152,9 +170,13 @@ h1 { margin: 0.7rem 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.14; col
 .btn-primary { color: #fff; background: linear-gradient(135deg, #4338ca 0%, #2563eb 100%); }
 .btn-secondary { color: #334155; border: 1px solid #cfdaf9; background: #fff; }
 .kpis { margin-top: 1.3rem; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
-.kpis article { border: 1px solid #dce6fb; border-radius: 14px; padding: 0.8rem; background: rgba(255, 255, 255, 0.8); }
+.kpi-link { text-decoration: none; color: inherit; display: block; }
+.kpis article { border: 1px solid #dce6fb; border-radius: 14px; padding: 0.8rem; background: rgba(255, 255, 255, 0.8); min-height: 100%; }
+.kpi-link article { transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+.kpi-link:hover article { transform: translateY(-2px); border-color: #bcd1ff; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.14); }
 .kpis p { margin: 0; color: #64748b; font-size: 0.8rem; }
 .kpis strong { display: block; margin-top: 0.2rem; color: #0f172a; font-size: 1.2rem; }
+.kpis article small { display: inline-block; margin-top: 0.35rem; font-weight: 700; color: #1d4ed8; }
 .section { margin-top: 1.4rem; }
 .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
 .section-head h2, .howto h2 { margin: 0; color: #0f172a; }
@@ -163,9 +185,9 @@ h1 { margin: 0.7rem 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.14; col
 .event-card { border: 1px solid #dbe4f6; border-radius: 16px; padding: 0.9rem; background: #fff; }
 .event-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .status { font-size: 0.74rem; font-weight: 700; border-radius: 999px; padding: 0.25rem 0.55rem; }
-.status-ongoing { background: #dcfce7; color: #166534; }
-.status-upcoming { background: #dbeafe; color: #1d4ed8; }
-.status-closed, .status-ended { background: #f1f5f9; color: #334155; }
+.status-ongoing { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.status-upcoming { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.status-closed, .status-ended { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 .event-card h3 { margin: 0.65rem 0 0.4rem; color: #0f172a; }
 .event-card p { margin: 0; color: #475569; font-size: 0.9rem; }
 .tags { margin-top: 0.65rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }

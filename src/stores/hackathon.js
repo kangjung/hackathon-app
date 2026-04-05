@@ -123,7 +123,8 @@ const normalizeTeams = (items) =>
           }))
           .filter((request) => request.userId)
       : [],
-    hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || ''
+    hackathonSlug: team.hackathonSlug || team.slug || team.hackathon || '',
+    createdAt: team.createdAt || team.created_at || null
   }))
 
 

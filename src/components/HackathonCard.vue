@@ -18,7 +18,7 @@
       </div>
       <p class="summary">{{ hackathon.summary }}</p>
       <ul>
-        <li>🗓 {{ hackathon.startDate }} ~ {{ hackathon.endDate }}</li>
+        <li>🗓 {{ formatHackathonPeriod(hackathon.startDate, hackathon.endDate) }}</li>
         <li>🏷 {{ hackathon.tags.join(', ') || '태그 없음' }}</li>
         <li>👥 {{ hackathon.participants }}명 참여</li>
       </ul>
@@ -29,6 +29,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useHackathonStore } from '../stores/hackathon'
+import { formatHackathonPeriod } from '../utils/dateTime'
 
 const props = defineProps({
   hackathon: { type: Object, required: true }
@@ -65,9 +66,8 @@ const onToggleFavorite = (event) => {
 h3 { margin: 0; font-size: 1.03rem; line-height: 1.35; }
 .summary { color: #475569; margin: 0.7rem 0 0.9rem; min-height: 3em; }
 .badge { border-radius: 999px; padding: 0.25rem 0.7rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-.badge.ongoing { background: #e8faef; color: #0f8c4b; }
-.badge.upcoming { background: #eaf0ff; color: #2c55d8; }
-.badge.closed { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-.badge.ended { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.badge.ongoing { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.badge.upcoming { background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe; }
+.badge.closed, .badge.ended { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
 ul { padding: 0; list-style: none; margin: 0; display: grid; gap: 0.35rem; color: #334155; font-size: 0.94rem; }
 </style>
