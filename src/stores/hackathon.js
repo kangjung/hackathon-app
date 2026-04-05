@@ -382,6 +382,24 @@ export const useHackathonStore = defineStore('hackathon', () => {
     })
   }
 
+
+  const stats = computed(() => {
+    const discoverableHackathons = hackathons.value.filter((hackathon) =>
+      ['ongoing', 'upcoming'].includes(hackathon.status)
+    ).length
+
+    const recruitingTeams = teams.value.filter((team) => !isRecruitmentClosed(team)).length
+    const registeredProjects = submissions.value.length > 0 ? submissions.value.length : leaderboards.value.length
+
+    return {
+      totalHackathons: hackathons.value.length,
+      discoverableHackathons,
+      totalTeams: teams.value.length,
+      recruitingTeams,
+      registeredProjects
+    }
+  })
+
   const filteredHackathons = computed(() => {
     let result = [...hackathons.value]
     if (filters.value.status !== 'all') {
@@ -878,6 +896,7 @@ export const useHackathonStore = defineStore('hackathon', () => {
     error,
     hasLoaded,
     filteredHackathons,
+    stats,
     isFavoriteHackathon,
     toggleFavoriteHackathon,
     loadData,
