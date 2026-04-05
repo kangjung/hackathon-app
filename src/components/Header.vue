@@ -42,8 +42,9 @@ const unreadCount = computed(() => {
   return hackathonStore.getUnreadNotificationCount(authStore.currentUser.id)
 })
 
-const onLogout = () => {
+const onLogout = async () => {
   authStore.logout()
+  await hackathonStore.loadData({ force: true })
   router.push('/')
 }
 </script>
