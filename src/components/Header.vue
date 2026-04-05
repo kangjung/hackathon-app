@@ -9,6 +9,7 @@
         <router-link to="/hackathons">해커톤</router-link>
         <router-link to="/teams">팀 찾기</router-link>
         <router-link to="/rankings">랭킹</router-link>
+        <router-link to="/faq">FAQ</router-link>
         <router-link to="/me">내 정보</router-link>
         <router-link v-if="authStore.isLoggedIn" to="/notifications" class="notification-link">
           알림

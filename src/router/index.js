@@ -8,6 +8,7 @@ import Auth from '../views/Auth.vue'
 import MyProfile from '../views/MyProfile.vue'
 import Notifications from '../views/Notifications.vue'
 import TeamDetail from '../views/TeamDetail.vue'
+import Faq from '../views/Faq.vue'
 import NotFound from '../views/NotFound.vue'
 import { useAuthStore } from '../stores/auth'
 
@@ -21,6 +22,7 @@ const routes = [
   { path: '/teams/:teamCode', component: TeamDetail, props: true },
   { path: '/camp', redirect: (to) => ({ path: '/teams', query: to.query }) },
   { path: '/auth', component: Auth },
+  { path: '/faq', component: Faq },
   { path: '/me', component: MyProfile, meta: { requiresLogin: true } },
   { path: '/notifications', component: Notifications, meta: { requiresLogin: true } },
   { path: '/:pathMatch(.*)*', component: NotFound }
