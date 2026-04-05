@@ -28,7 +28,11 @@
 
       <div class="apply-box" v-if="!canManageTeam(team)">
         <div class="apply-controls">
-          <select v-model="applyRole">
+          <select
+            v-model="applyRole"
+            :disabled="!authStore.isLoggedIn"
+            :title="!authStore.isLoggedIn ? '로그인 후 지원할 수 있습니다.' : ''"
+          >
             <option disabled value="">지원 포지션 선택</option>
             <option v-for="position in getOpenPositions(team)" :key="position.role" :value="position.role">
               {{ position.role }} ({{ position.remaining }}명 남음)
@@ -44,6 +48,7 @@
             가입 신청
           </button>
         </div>
+        <p v-if="!authStore.isLoggedIn" class="hint">로그인 후 지원 포지션을 선택하고 가입 신청할 수 있습니다.</p>
       </div>
 
       <div class="requests-box" v-if="canManageTeam(team)">
@@ -64,7 +69,10 @@
         <p v-else class="hint">대기 중인 신청이 없습니다.</p>
       </div>
 
-      <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">가입 문의 ↗</a>
+      <a v-if="team.contact" :href="team.contact" target="_blank" rel="noreferrer" class="contact-link">
+        가입 문의 (오픈채팅/폼)
+        <span class="external-icon" aria-hidden="true">↗</span>
+      </a>
     </article>
   </section>
 
@@ -202,6 +210,7 @@ h1 { margin: 0; }
 .request-actions .reject { background: #dc2626; }
 .hint { color: #64748b; }
 .contact-link { display: inline-block; margin-top: 0.8rem; color: #4338ca; font-weight: 700; text-decoration: none; }
+.external-icon { margin-left: 0.25rem; }
 @media (max-width: 760px) {
   .apply-controls { grid-template-columns: 1fr; align-items: stretch; }
 }

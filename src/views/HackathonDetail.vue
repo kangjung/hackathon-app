@@ -32,7 +32,7 @@
     <div class="tabs">
       <article>
         <h3>개요/안내</h3>
-        <p>{{ overviewSummary || '-' }}</p>
+        <p>{{ overviewSummary || '상세 안내를 준비 중입니다.' }}</p>
         <p v-if="teamPolicyText">{{ teamPolicyText }}</p>
         <ul v-if="infoNoticeList.length">
           <li v-for="(notice, index) in infoNoticeList" :key="`notice-${index}`">{{ notice }}</li>
@@ -77,7 +77,7 @@
             {{ item.place }}: {{ formatMoney(item.amountKRW) }}원
           </li>
         </ul>
-        <p v-else>-</p>
+        <p v-else>미공개</p>
       </article>
 
       <article>
@@ -177,7 +177,7 @@ const faqLink = computed(() => sections.value.info?.links?.faq || '')
 
 const evalMetricText = computed(() => {
   const metric = sections.value.eval?.metricName
-  return metric ? `지표: ${metric}` : '평가 지표 정보 없음'
+  return metric ? `지표: ${metric}` : '평가 지표 미공개'
 })
 const evalDescription = computed(() => sections.value.eval?.description || '')
 const evalLimitText = computed(() => {

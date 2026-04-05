@@ -47,17 +47,17 @@
             <th v-if="authStore.isAdmin">PDF</th>
           </tr>
           <tr v-else>
-            <th>rank</th>
-            <th>nickname</th>
-            <th>points</th>
+            <th>순위</th>
+            <th>닉네임</th>
+            <th>포인트</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="entry in rows" :key="`${entry.teamCode}-${entry.rank}`">
             <template v-if="targetSlug">
-              <td>{{ entry.pending ? '-' : entry.rank }}</td>
+              <td>{{ entry.pending ? '제출 전' : entry.rank }}</td>
               <td>{{ entry.teamName }}</td>
-              <td>{{ entry.pending ? '-' : entry.points }}</td>
+              <td>{{ entry.pending ? '점수 미산출' : entry.points }}</td>
               <td>{{ entry.pending ? '미제출' : '제출완료' }}</td>
               <td v-if="authStore.isAdmin">{{ entry.submission?.evaluatorScore ?? '-' }}</td>
               <td v-if="authStore.isAdmin">{{ entry.submission?.participantScore ?? '-' }}</td>
