@@ -76,37 +76,6 @@
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-head">
-        <h2>명세 체크 현황</h2>
-        <small>첨부 메모 기준 주요 흐름 점검</small>
-      </div>
-      <div class="check-grid">
-        <article v-for="item in specChecks" :key="item.name" class="check-card">
-          <div class="check-top">
-            <strong>{{ item.name }}</strong>
-            <span :class="['check-chip', item.done ? 'done' : 'todo']">{{ item.done ? '구현됨' : '미흡' }}</span>
-          </div>
-          <p>{{ item.description }}</p>
-          <router-link :to="item.to">화면 확인</router-link>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-head">
-        <h2>상용 서비스 확장 제안</h2>
-        <small>이용자 편의성 중심 우선순위</small>
-      </div>
-      <div class="roadmap">
-        <article v-for="plan in growthPlans" :key="plan.title">
-          <h3>{{ plan.title }}</h3>
-          <ul>
-            <li v-for="item in plan.items" :key="item">{{ item }}</li>
-          </ul>
-        </article>
-      </div>
-    </section>
   </section>
 </template>
 
@@ -155,66 +124,6 @@ const featuredHackathons = computed(() =>
     })
     .slice(0, 3)
 )
-
-const specChecks = computed(() => [
-  {
-    name: '메인 이동 버튼 3종',
-    description: '해커톤/팀캠프/랭킹으로 즉시 이동 가능한 CTA를 제공합니다.',
-    to: '/',
-    done: true
-  },
-  {
-    name: '해커톤 목록 + 필터',
-    description: '상태/검색/태그 필터와 상세 이동 동선을 제공합니다.',
-    to: '/hackathons',
-    done: true
-  },
-  {
-    name: '해커톤 상세 7개 섹션',
-    description: '개요·평가·일정·상금·팀·제출·리더보드 섹션이 모두 구성되어 있습니다.',
-    to: featuredHackathons.value[0] ? `/hackathons/${featuredHackathons.value[0].slug}` : '/hackathons',
-    done: true
-  },
-  {
-    name: '팀 모집/지원/승인 플로우',
-    description: '팀 생성, 포지션별 지원, 팀장 승인/거절, 모집 마감 처리를 제공합니다.',
-    to: '/camp',
-    done: true
-  },
-  {
-    name: '글로벌 랭킹 + 기간 필터',
-    description: '전체/7일/30일 기준 랭킹 집계를 제공합니다.',
-    to: '/rankings',
-    done: true
-  }
-])
-
-const growthPlans = [
-  {
-    title: 'P0 · 운영 안정성',
-    items: [
-      '로그/분석 대시보드: 페이지 이탈·제출 실패 원인 추적',
-      '권한 분리 강화: 운영자/심사위원/참가자 역할별 접근 제어',
-      '모집·제출 마감 자동화: 일정 기반 자동 잠금 + 알림'
-    ]
-  },
-  {
-    title: 'P1 · 사용자 편의성',
-    items: [
-      '개인화 추천: 관심 태그·북마크 기반 대회/팀 추천',
-      '신청함/알림센터: 팀 신청 상태, 심사 결과, 마감 리마인드 통합',
-      '제출 가이드 위저드: 단계별 체크리스트 + 실시간 유효성 검사'
-    ]
-  },
-  {
-    title: 'P2 · 상용화 성장 기능',
-    items: [
-      '결제/후원 연동: 유료 대회 등록, 기업 스폰서 패키지',
-      '기업 채용 연계: 수상·참가 이력 기반 인재풀 공개 프로필',
-      'API/외부 연동: GitHub, Slack, Discord와 자동 동기화'
-    ]
-  }
-]
 
 onMounted(() => {
   hackathonStore.loadData()
@@ -267,22 +176,9 @@ h1 { margin: 0.7rem 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.14; col
 .steps span { font-size: 0.78rem; font-weight: 800; color: #4f46e5; }
 .steps h3 { margin: 0.3rem 0 0.35rem; color: #0f172a; }
 .steps p { margin: 0; color: #475569; font-size: 0.9rem; }
-.check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
-.check-card { border: 1px solid #dbe4f6; border-radius: 16px; padding: 0.9rem; background: #fff; }
-.check-top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
-.check-card p { margin: 0.45rem 0 0.6rem; color: #475569; font-size: 0.9rem; }
-.check-card a { color: #312e81; font-weight: 700; text-decoration: none; }
-.check-chip { font-size: 0.72rem; border-radius: 999px; padding: 0.22rem 0.52rem; font-weight: 800; }
-.check-chip.done { background: #dcfce7; color: #166534; }
-.check-chip.todo { background: #fee2e2; color: #991b1b; }
-.roadmap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; }
-.roadmap article { border: 1px solid #dbe4f6; border-radius: 16px; background: #fff; padding: 0.95rem; }
-.roadmap h3 { margin: 0; color: #0f172a; font-size: 1rem; }
-.roadmap ul { margin: 0.6rem 0 0; padding-left: 1rem; color: #475569; }
-.roadmap li + li { margin-top: 0.35rem; }
 small { color: #64748b; font-weight: 600; }
 @media (max-width: 980px) {
-  .kpis, .event-grid, .steps, .check-grid, .roadmap { grid-template-columns: 1fr; }
+  .kpis, .event-grid, .steps { grid-template-columns: 1fr; }
   .hero { padding: 1.25rem; }
 }
 </style>
