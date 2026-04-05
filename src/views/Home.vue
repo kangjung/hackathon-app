@@ -16,7 +16,7 @@
 
       <div class="kpis" aria-label="서비스 핵심 지표">
         <article>
-          <p>진행중/예정 대회</p>
+          <p>진행 중 · 예정 대회</p>
           <strong>{{ liveEventsCount }}</strong>
         </article>
         <article>
@@ -24,11 +24,11 @@
           <strong>{{ recruitingTeamsCount }}</strong>
         </article>
         <article>
-          <p>등록 프로젝트</p>
+          <p>등록된 프로젝트</p>
           <strong>{{ activeProjectsCount }}</strong>
         </article>
         <article>
-          <p>오늘 제출 업데이트</p>
+          <p>오늘의 제출</p>
           <strong>{{ todayUpdatesCount }}</strong>
         </article>
       </div>
