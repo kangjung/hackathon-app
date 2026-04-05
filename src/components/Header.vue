@@ -1,7 +1,10 @@
 <template>
   <header class="header">
     <nav class="nav">
-      <router-link to="/" class="logo">🚀 Vibe Hackathon</router-link>
+      <router-link to="/" class="logo">
+        <img src="/brand-mark.svg" alt="Vibe Hackathon 로고" class="logo-icon" />
+        <span>Vibe Hackathon</span>
+      </router-link>
       <div class="nav-links">
         <router-link to="/hackathons">해커톤</router-link>
         <router-link to="/teams">팀 찾기</router-link>
@@ -59,7 +62,8 @@ const onLogout = async () => {
   backdrop-filter: blur(12px);
 }
 .nav { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0.9rem 1.2rem; }
-.logo { font-size: 1.2rem; font-weight: 800; text-decoration: none; color: #1d2c62; }
+.logo { display: inline-flex; align-items: center; gap: 0.55rem; font-size: 1.2rem; font-weight: 800; text-decoration: none; color: #1d2c62; }
+.logo-icon { width: 1.9rem; height: 1.9rem; border-radius: 0.55rem; box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25); }
 .nav-links { display: flex; gap: 0.5rem; align-items: center; }
 .nav-links a, .logout { color: #334155; text-decoration: none; padding: 0.48rem 0.85rem; border-radius: 999px; transition: all 0.2s ease; border: none; background: transparent; font-size: 1rem; cursor: pointer; }
 .nav-links a:hover, .nav-links a.router-link-active, .logout:hover { color: #1e3a8a; background: #e9efff; }
