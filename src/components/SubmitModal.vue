@@ -3,7 +3,7 @@
     <div class="panel">
       <h3>결과물 제출</h3>
       <p>팀 리더가 기획서/웹/PDF 링크를 제출하면 리더보드에 반영됩니다.</p>
-      <select v-model="teamCode">
+      <select :value="teamCode" @change="onTeamSelectChange">
         <option disabled value="">내 팀 선택</option>
         <option v-for="team in teams" :key="team.code" :value="team.code">{{ team.name }}</option>
       </select>
@@ -13,7 +13,7 @@
       <textarea v-model="notes" placeholder="추가 메모 (선택)"></textarea>
       <div class="actions">
         <button class="ghost" @click="$emit('close')">취소</button>
-        <button :disabled="!isValid" @click="submit">저장/제출</button>
+        <button :disabled="!isValid" :title="submitButtonTitle" @click="submit">저장/제출</button>
       </div>
     </div>
   </div>
@@ -36,6 +36,18 @@ const notes = ref('')
 const isValid = computed(() =>
   Boolean(teamCode.value && planningUrl.value.trim() && webUrl.value.trim() && pdfUrl.value.trim())
 )
+
+const submitButtonTitle = computed(() => {
+  if (!teamCode.value) return '팀을 선택해주세요.'
+  if (!planningUrl.value.trim() || !webUrl.value.trim() || !pdfUrl.value.trim()) {
+    return '필수 제출 항목을 모두 입력해주세요.'
+  }
+  return ''
+})
+
+const onTeamSelectChange = (event) => {
+  teamCode.value = String(event?.target?.value || '').trim()
+}
 
 const submit = () => {
   if (!isValid.value) return

@@ -59,7 +59,7 @@
         <div class="positions-section">
           <p class="positions-title">모집 포지션</p>
           <div v-for="(position, index) in newTeam.positions" :key="index" class="position-row">
-            <select v-model="position.role" required>
+            <select :value="position.role" required @change="onCreatePositionRoleChange($event, index)">
               <option disabled value="">포지션 선택</option>
               <option v-for="option in positionOptions" :key="option" :value="option">{{ option }}</option>
               <option value="기타">기타(직접 입력)</option>
@@ -361,6 +361,16 @@ const canManageTeam = (team) =>
 
 const addPosition = () => {
   newTeam.value.positions.push(defaultPosition())
+}
+
+const onCreatePositionRoleChange = (event, index) => {
+  const nextRole = String(event?.target?.value || '').trim()
+  const targetPosition = newTeam.value.positions[index]
+  if (!targetPosition) return
+  targetPosition.role = nextRole
+  if (nextRole !== '기타') {
+    targetPosition.customRole = ''
+  }
 }
 
 const removePosition = (index) => {
