@@ -5,7 +5,7 @@ Vue 3 + Vite 기반 해커톤 플랫폼 데모 웹앱입니다.
 
 ## 배포 주소
 
-- https://vibehackathonhub.netlify.app/
+- https://hackathon-app-kappa.vercel.app/
 
 ## 1. 프로젝트 소개
 
